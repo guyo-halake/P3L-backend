@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(100) NOT NULL,
+  email VARCHAR(150) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  phone VARCHAR(30),
+  avatar VARCHAR(255),
+  github_token VARCHAR(255),
+  user_type ENUM('full_admin', 'dev') NOT NULL DEFAULT 'dev',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

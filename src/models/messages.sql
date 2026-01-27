@@ -1,0 +1,10 @@
+-- messages.sql
+CREATE TABLE IF NOT EXISTS messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    from_user INT NOT NULL,
+    to_user INT NOT NULL,
+    message TEXT NOT NULL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    delivered BOOLEAN DEFAULT FALSE,
+    read BOOLEAN DEFAULT FALSE
+);

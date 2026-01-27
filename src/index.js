@@ -1,0 +1,111 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { createServer } from 'http';
+import { Server as SocketIOServer } from 'socket.io';
+
+import healthRoutes from './routes/health.js';
+import authRoutes from './routes/auth.js';
+import projectRoutes from './routes/projects.js';
+import clientRoutes from './routes/clients.js';
+import emailRoutes from './routes/email.js';
+import userSettingsRoutes from './routes/userSettings.js';
+import githubRoutes from './routes/github.js';
+import orgsRoutes from './routes/orgs.js';
+import messageRoutes from './routes/messages.js';
+import activityRoutes from './routes/activity.js';
+
+dotenv.config();
+
+const app = express();
+const httpServer = createServer(app);
+const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
+
+
+// Health check route
+// ...existing code...
+
+app.use('/api/auth', authRoutes);
+app.use('/api/user-settings', userSettingsRoutes);
+app.use('/api/github', githubRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/clients', clientRoutes);
+app.use('/api/activity', activityRoutes);
+app.use('/api/messages', (req, res, next) => {
+  console.log(`[${new Date().toISOString()}] /api/messages ${req.method} body:`, req.body, 'params:', req.params, 'query:', req.query);
+  next();
+}, messageRoutes);
+
+app.get('/', (req, res) => {
+  res.send('P3L Backend API running');
+});
+
+const PORT = process.env.PORT || 5000;
+httpServer.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+// --- Socket.IO events ---
+const onlineUsers = new Map(); // userId -> socket.id
+
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  // Listen for user identification
+  socket.on('user_online', (userId) => {
+    onlineUsers.set(userId, socket.id);
+    io.emit('online_users', Array.from(onlineUsers.keys()));
+  });
+
+
+  socket.on('send_message', (data) => {
+    // data: { to, from, message, timestamp }
+    io.emit('receive_message', data);
+  });
+
+  // --- In-app call signaling ---
+  socket.on('call_offer', ({ to, from, signal }) => {
+    const targetSocketId = onlineUsers.get(to);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('call_offer', { from, signal });
+    }
+  });
+  socket.on('call_answer', ({ to, signal }) => {
+    const targetSocketId = onlineUsers.get(to);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('call_answer', { signal });
+    }
+  });
+  socket.on('call_end', ({ to }) => {
+    const targetSocketId = onlineUsers.get(to);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('call_end');
+    }
+  });
+
+  socket.on('disconnect', () => {
+    // Remove user from onlineUsers
+    for (const [userId, sockId] of onlineUsers.entries()) {
+      if (sockId === socket.id) {
+        onlineUsers.delete(userId);
+        break;
+      }
+    }
+    io.emit('online_users', Array.from(onlineUsers.keys()));
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('GLOBAL ERROR HANDLER:', err);
+  res.status(500).json({ error: 'Internal Server Error', details: err.message });
+});
