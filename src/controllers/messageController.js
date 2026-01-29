@@ -6,7 +6,7 @@ export async function saveMessage({ from, to, message, timestamp }) {
       'INSERT INTO messages (from_user, to_user, message, timestamp) VALUES (?, ?, ?, ?)',
       [from, to, message, timestamp]
     );
-    console.log(`Saved message from ${from} to ${to} at ${timestamp}`);
+    // console.log removed for production
     return result.insertId;
   } catch (err) {
     console.error('Error saving message:', err);
@@ -22,7 +22,7 @@ export async function getMessagesBetweenUsers(user1, user2) {
         ORDER BY timestamp ASC`,
       [user1, user2, user2, user1]
     );
-    console.log(`Fetched messages between ${user1} and ${user2}: ${rows.length} found`);
+    // console.log removed for production
     return rows;
   } catch (err) {
     console.error('Error fetching messages:', err);

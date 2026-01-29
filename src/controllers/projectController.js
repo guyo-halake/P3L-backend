@@ -1,3 +1,33 @@
+import axios from 'axios';
+
+// Fetch all Vercel projects using the backend token
+export const getVercelProjects = async (req, res) => {
+  try {
+    const token = process.env.VERCEL_TOKEN;
+    if (!token) {
+      console.error('VERCEL_TOKEN not set in backend .env');
+      return res.status(500).json({ error: 'VERCEL_TOKEN not set in backend .env' });
+    }
+    const response = await axios.get('https://api.vercel.com/v6/projects', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error fetching Vercel projects:', error);
+    if (error.response) {
+      console.error('Vercel API response:', error.response.data);
+      return res.status(500).json({
+        error: 'Failed to fetch Vercel projects',
+        details: error.message,
+        vercelResponse: error.response.data
+      });
+    }
+    res.status(500).json({ error: 'Failed to fetch Vercel projects', details: error.message });
+  }
+};
 // Save a Vercel project to the backend
 export const saveVercelProject = async (req, res) => {
   try {

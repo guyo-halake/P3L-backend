@@ -11,10 +11,13 @@ export const listUsers = async (req, res) => {
 // Add a new user (admin only)
 export const addUser = async (req, res) => {
   const { username, email, password, user_type, phone } = req.body;
+  console.log('addUser received:', { username, email, password, user_type, phone });
   if (!username || !email || !password || !user_type) {
+    console.log('addUser missing field:', { username, email, password, user_type, phone });
     return res.status(400).json({ message: 'All fields are required' });
   }
   if (!['full_admin', 'dev'].includes(user_type)) {
+    console.log('addUser invalid user_type:', user_type);
     return res.status(400).json({ message: 'Invalid user_type' });
   }
   try {
@@ -69,7 +72,7 @@ export const getUserProfile = async (req, res) => {
     return res.status(400).json({ message: 'user_id is required' });
   }
   try {
-    const [rows] = await db.execute('SELECT id, username, email, phone, avatar, github_token FROM users WHERE id = ?', [user_id]);
+    const [rows] = await db.execute('SELECT id, username, email, phone, avatar, github_token, user_type FROM users WHERE id = ?', [user_id]);
     if (rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }

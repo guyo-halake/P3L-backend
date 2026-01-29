@@ -16,6 +16,15 @@ const allowRoles = (roles) => (req, res, next) => {
 router.get('/users', authenticateToken, allowRoles(['full_admin', 'dev']), listUsers);
 router.post('/users', authenticateToken, allowRoles(['full_admin', 'dev']), addUser);
 router.put('/users/type', authenticateToken, allowRoles(['full_admin', 'dev']), updateUserType);
+
+// Delete user by ID (RESTful)
+router.delete('/users/:id', authenticateToken, allowRoles(['full_admin', 'dev']), async (req, res) => {
+	// Reuse deleteUser controller logic, but adapt to req.params.id
+	req.body.user_id = req.params.id;
+	await deleteUser(req, res);
+});
+
+// Legacy bulk delete (if needed)
 router.delete('/users', authenticateToken, allowRoles(['full_admin', 'dev']), deleteUser);
 
 // Get user profile

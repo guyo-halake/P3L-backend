@@ -5,6 +5,8 @@ import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 
 import healthRoutes from './routes/health.js';
+import marketRoutes from './routes/market.js';
+import { setIO } from './socket.js';
 import authRoutes from './routes/auth.js';
 import projectRoutes from './routes/projects.js';
 import clientRoutes from './routes/clients.js';
@@ -14,10 +16,13 @@ import githubRoutes from './routes/github.js';
 import orgsRoutes from './routes/orgs.js';
 import messageRoutes from './routes/messages.js';
 import activityRoutes from './routes/activity.js';
+import schoolsRoutes from './routes/schools.js';
+import tryhackmeRoutes from './routes/tryhackme.js';
 
 dotenv.config();
 
 const app = express();
+
 const httpServer = createServer(app);
 const io = new SocketIOServer(httpServer, {
   cors: {
@@ -25,24 +30,43 @@ const io = new SocketIOServer(httpServer, {
     methods: ['GET', 'POST']
   }
 });
+setIO(io);
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
+import expressSession from 'express-session';
+
+app.use(expressSession({
+  secret: process.env.SESSION_SECRET || 'dev_secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false, httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 }, // 1 week
+}));
 
 // Health check route
 // ...existing code...
 
 app.use('/api/auth', authRoutes);
+app.use('/api/tryhackme', tryhackmeRoutes);
 app.use('/api/user-settings', userSettingsRoutes);
 app.use('/api/github', githubRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/messages', (req, res, next) => {
-  console.log(`[${new Date().toISOString()}] /api/messages ${req.method} body:`, req.body, 'params:', req.params, 'query:', req.query);
+  // console.log removed for production
   next();
 }, messageRoutes);
+app.use('/api/schools', schoolsRoutes);
+app.use('/api/market', marketRoutes);
+app.use('/api/email', emailRoutes);
+app.use(expressSession({
+  secret: process.env.SESSION_SECRET || 'dev_secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false, httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 }, // 1 week
+}));
 
 app.get('/', (req, res) => {
   res.send('P3L Backend API running');
@@ -50,14 +74,14 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  // console.log removed for production
 });
 
 // --- Socket.IO events ---
 const onlineUsers = new Map(); // userId -> socket.id
 
 io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
+  // console.log removed for production
 
   // Listen for user identification
   socket.on('user_online', (userId) => {
@@ -100,7 +124,7 @@ io.on('connection', (socket) => {
       }
     }
     io.emit('online_users', Array.from(onlineUsers.keys()));
-    console.log('User disconnected:', socket.id);
+    // console.log removed for production
   });
 });
 
