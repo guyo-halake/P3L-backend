@@ -27,17 +27,24 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
+  console.log('Login route hit');
   if (!email || !password) {
+    console.log('Missing email or password');
     return res.status(400).json({ message: 'All fields are required' });
   }
   try {
     const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    console.log('DB rows:', rows);
     if (rows.length === 0) {
+      console.error('Login failed: No user found for email:', email);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     const user = rows[0];
+    console.log('User from DB:', user);
     const match = await bcrypt.compare(password, user.password);
+    console.log('Password match:', match);
     if (!match) {
+      console.error('Login failed: Password does not match for email:', email);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     const token = jwt.sign({ id: user.id, email: user.email, user_type: user.user_type }, process.env.JWT_SECRET, { expiresIn: '1d' });

@@ -22,6 +22,9 @@ import tryhackmeRoutes from './routes/tryhackme.js';
 
 dotenv.config();
 
+// Debug: Print DB config values
+console.log('DB config:', process.env.DB_HOST, process.env.DB_USER, process.env.DB_NAME);
+
 const app = express();
 
 const httpServer = createServer(app);
@@ -63,8 +66,13 @@ app.use('/api/schools', schoolsRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/email', emailRoutes);
 // Only enable mock routes in development
+let mockRoutes;
 if (process.env.NODE_ENV === 'development') {
-  app.use('/api/mock', require('./routes/mock.js').default);
+  // Dynamically import mockRoutes only in development
+  // import('./routes/mock.js').then(module => {
+  //   mockRoutes = module.default;
+  //   app.use('/api/mock', mockRoutes);
+  // }
 }
 
 
