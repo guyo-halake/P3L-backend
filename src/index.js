@@ -18,9 +18,12 @@ import messageRoutes from './routes/messages.js';
 import activityRoutes from './routes/activity.js';
 import schoolsRoutes from './routes/schools.js';
 import tryhackmeRoutes from './routes/tryhackme.js';
-import mockRoutes from './routes/mock.js';
+// import mockRoutes from './routes/mock.js'; // Only enable in development
 
 dotenv.config();
+
+// Debug: Print DB config values
+console.log('DB config:', process.env.DB_HOST, process.env.DB_USER, process.env.DB_NAME);
 
 const app = express();
 
@@ -62,13 +65,16 @@ app.use('/api/messages', (req, res, next) => {
 app.use('/api/schools', schoolsRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/email', emailRoutes);
-app.use('/api/mock', mockRoutes);
-app.use(expressSession({
-  secret: process.env.SESSION_SECRET || 'dev_secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: false, httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 }, // 1 week
-}));
+// Only enable mock routes in development
+let mockRoutes;
+if (process.env.NODE_ENV === 'development') {
+  // Dynamically import mockRoutes only in development
+  // import('./routes/mock.js').then(module => {
+  //   mockRoutes = module.default;
+  //   app.use('/api/mock', mockRoutes);
+  // }
+}
+
 
 app.get('/', (req, res) => {
   res.send('P3L Backend API running');
