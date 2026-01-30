@@ -18,6 +18,7 @@ import messageRoutes from './routes/messages.js';
 import activityRoutes from './routes/activity.js';
 import schoolsRoutes from './routes/schools.js';
 import tryhackmeRoutes from './routes/tryhackme.js';
+import mockRoutes from './routes/mock.js';
 
 dotenv.config();
 
@@ -61,6 +62,7 @@ app.use('/api/messages', (req, res, next) => {
 app.use('/api/schools', schoolsRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/mock', mockRoutes);
 app.use(expressSession({
   secret: process.env.SESSION_SECRET || 'dev_secret',
   resave: false,

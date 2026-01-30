@@ -1,0 +1,24 @@
+{
+  "email_templates": [
+    {
+      "name": "Welcome Email",
+      "content": "Hello __client__, welcome to P3L Developers! Your project __project__ is starting soon."
+    },
+    {
+      "name": "Project Update",
+      "content": "Hi __client__, your project __project__ status is now: __status__."
+    }
+  ],
+  "sms_templates": [
+    {
+      "name": "Project Start SMS",
+      "content": "P3L: Hi __client__, your project __project__ is now underway!"
+    }
+  ],
+  "whatsapp_templates": [
+    {
+      "name": "WhatsApp Welcome",
+      "content": "Welcome to P3L! Project __project__ is starting. Contact us for updates."
+    }
+  ]
+}

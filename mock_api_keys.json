@@ -1,0 +1,12 @@
+{
+  "safaricom_daraja": "saf573930rgfkiosdby678456dfgt-p3l",
+  "gemini_pro": "fghkskd89-nsg",
+  "github": "ghoshsytp83rb5",
+  "vercel": "vercel_mock_key_1234567890",
+  "whatsapp_business": "whatsapp_mock_key_0987654321",
+  "payments": {
+    "im_bank": "im_mock_key_112233",
+    "paypal": "paypal_mock_key_445566",
+    "binance": "binance_mock_key_778899"
+  }
+}

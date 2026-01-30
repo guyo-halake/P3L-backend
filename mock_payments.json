@@ -1,0 +1,22 @@
+{
+  "accounts": [
+    {
+      "provider": "I&M Bank",
+      "account_name": "P3L Developers Ltd",
+      "account_number": "IM1234567890",
+      "api_key": "im_mock_key_112233"
+    },
+    {
+      "provider": "Paypal",
+      "account_name": "p3l@paypal.com",
+      "account_number": "PP44556677",
+      "api_key": "paypal_mock_key_445566"
+    },
+    {
+      "provider": "Binance",
+      "account_name": "p3l_binance",
+      "account_number": "BN77889900",
+      "api_key": "binance_mock_key_778899"
+    }
+  ]
+}
