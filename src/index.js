@@ -141,3 +141,9 @@ app.use((err, req, res, next) => {
   console.error('GLOBAL ERROR HANDLER:', err);
   res.status(500).json({ error: 'Internal Server Error', details: err.message });
 });
+
+// Start server
+const PORT = process.env.PORT || 5000;
+httpServer.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
