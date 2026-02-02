@@ -8,5 +8,6 @@ CREATE TABLE IF NOT EXISTS clients (
     lastMessage TEXT,
     unread INT DEFAULT 0,
     phone VARCHAR(20),
+    email VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

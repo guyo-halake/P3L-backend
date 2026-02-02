@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 import healthRoutes from './routes/health.js';
 import marketRoutes from './routes/market.js';
@@ -15,6 +17,7 @@ import userSettingsRoutes from './routes/userSettings.js';
 import githubRoutes from './routes/github.js';
 import orgsRoutes from './routes/orgs.js';
 import messageRoutes from './routes/messages.js';
+import groupRoutes from './routes/groups.js';
 import activityRoutes from './routes/activity.js';
 import schoolsRoutes from './routes/schools.js';
 import tryhackmeRoutes from './routes/tryhackme.js';
@@ -26,6 +29,10 @@ dotenv.config();
 console.log('DB config:', process.env.DB_HOST, process.env.DB_USER, process.env.DB_NAME);
 
 const app = express();
+// Resolve project paths for static serving in production
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendDist = path.resolve(__dirname, '../../dist');
 
 const httpServer = createServer(app);
 const io = new SocketIOServer(httpServer, {
@@ -49,7 +56,7 @@ app.use(expressSession({
 }));
 
 // Health check route
-// ...existing code...
+app.use('/api', healthRoutes);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tryhackme', tryhackmeRoutes);
@@ -62,6 +69,7 @@ app.use('/api/messages', (req, res, next) => {
   // console.log removed for production
   next();
 }, messageRoutes);
+app.use('/api/groups', groupRoutes);
 app.use('/api/schools', schoolsRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/email', emailRoutes);
@@ -80,10 +88,14 @@ app.get('/', (req, res) => {
   res.send('P3L Backend API running');
 });
 
-const PORT = process.env.PORT || 5000;
-httpServer.listen(PORT, () => {
-  // console.log removed for production
-});
+// Serve frontend build in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
+
 
 // --- Socket.IO events ---
 const onlineUsers = new Map(); // userId -> socket.id
@@ -99,8 +111,40 @@ io.on('connection', (socket) => {
 
 
   socket.on('send_message', (data) => {
-    // data: { to, from, message, timestamp }
-    io.emit('receive_message', data);
+    // data: { to, from, message, timestamp, groupId }
+    if (data.groupId) {
+      // Group message: broadcast to the group room
+      io.to(`group_${data.groupId}`).emit('receive_message', data);
+    } else {
+      // Private message
+      const targetSocketId = onlineUsers.get(data.to);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('receive_message', data);
+      }
+    }
+  });
+
+  socket.on('join_group', (groupId) => {
+    socket.join(`group_${groupId}`);
+    // console.log(`User joined group room group_${groupId}`);
+  });
+
+  socket.on('messages_read', ({ from, to, groupId }) => {
+    if (groupId) {
+      io.to(`group_${groupId}`).emit('messages_read', { from, groupId });
+    } else {
+      const targetSocketId = onlineUsers.get(to);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('messages_read', { from });
+      }
+    }
+  });
+
+  socket.on('typing', ({ from, to }) => {
+    const targetSocketId = onlineUsers.get(to);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('typing', { from });
+    }
   });
 
   // --- In-app call signaling ---
