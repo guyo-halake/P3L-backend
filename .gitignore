@@ -1,8 +1,13 @@
 # Ignore environment files
 .env
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+RAILWAY_ENV_VARIABLES.txt
 
-node_modules/
-.env
-.DS_Store
+# Ignore database dumps
+*.sql
+
+# Ignore logs
 npm-debug.log*
+
+# Misc
+node_modules/
+.DS_Store

@@ -21,6 +21,7 @@ import groupRoutes from './routes/groups.js';
 import activityRoutes from './routes/activity.js';
 import schoolsRoutes from './routes/schools.js';
 import tryhackmeRoutes from './routes/tryhackme.js';
+import notionRoutes from './routes/notionRoutes.js';
 // import mockRoutes from './routes/mock.js'; // Only enable in development
 
 dotenv.config();
@@ -73,6 +74,7 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/schools', schoolsRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/notion', notionRoutes);
 // Only enable mock routes in development
 let mockRoutes;
 if (process.env.NODE_ENV === 'development') {

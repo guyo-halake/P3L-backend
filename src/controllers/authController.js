@@ -6,6 +6,8 @@ import jwt from 'jsonwebtoken';
 const pendingResets = new Map(); // key: email, value: { code, expiresAt }
 
 export const register = async (req, res) => {
+  return res.status(403).json({ message: 'Registration is currently disabled.' });
+  /*
   const { username, email, password } = req.body;
   if (!username || !email || !password) {
     return res.status(400).json({ message: 'All fields are required' });
@@ -26,33 +28,27 @@ export const register = async (req, res) => {
     console.error('Register error:', err); // Log error
     res.status(500).json({ message: 'Server error', error: err.message });
   }
+  */
 };
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
-  console.log('Login route hit');
   if (!email || !password) {
-    console.log('Missing email or password');
     return res.status(400).json({ message: 'All fields are required' });
   }
   try {
     const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    console.log('DB rows:', rows);
     if (rows.length === 0) {
-      console.error('Login failed: No user found for email:', email);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     const user = rows[0];
-    console.log('User from DB:', user);
-    console.log('Comparing:', password, 'with hash:', user.password);
     const match = await bcrypt.compare(password, user.password);
-    console.log('Password match result:', match);
     if (!match) {
       console.error('Login failed: Password does not match for email:', email);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     const token = jwt.sign({ id: user.id, email: user.email, user_type: user.user_type }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.json({ token, user: { id: user.id, username: user.username, email: user.email, user_type: user.user_type } });
+    res.json({ token, user: { id: user.id, username: user.username, email: user.email, user_type: user.user_type, must_change_password: !!user.must_change_password } });
   } catch (err) {
     console.error('Login error:', err); // Log error
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -64,7 +60,7 @@ export default { register, login };
 // Admin: create user or reset password for existing user
 export const adminCreateOrResetUser = async (req, res) => {
   try {
-    const { username, email, password, user_type } = req.body;
+    const { username, email, password, user_type, phone } = req.body;
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
@@ -72,15 +68,15 @@ export const adminCreateOrResetUser = async (req, res) => {
     const [rows] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
     if (rows.length > 0) {
       await db.query(
-        'UPDATE users SET password = ?, username = COALESCE(?, username), user_type = COALESCE(?, user_type) WHERE email = ?',
-        [hashed, username || null, user_type || null, email]
+        'UPDATE users SET password = ?, username = COALESCE(?, username), user_type = COALESCE(?, user_type), phone = COALESCE(?, phone), must_change_password = TRUE WHERE email = ?',
+        [hashed, username || null, user_type || null, phone || null, email]
       );
       return res.json({ updated: true });
     } else {
       const uname = username || email.split('@')[0];
       await db.query(
-        'INSERT INTO users (username, email, password, user_type) VALUES (?, ?, ?, ?)',
-        [uname, email, hashed, user_type || 'dev']
+        'INSERT INTO users (username, email, password, user_type, phone, must_change_password) VALUES (?, ?, ?, ?, ?, TRUE)',
+        [uname, email, hashed, user_type || 'dev', phone || null]
       );
       return res.status(201).json({ created: true });
     }
@@ -103,7 +99,7 @@ export const changePassword = async (req, res) => {
     const match = await bcrypt.compare(current_password, user.password);
     if (!match) return res.status(401).json({ message: 'Current password is incorrect' });
     const hashed = await bcrypt.hash(new_password, 10);
-    await db.query('UPDATE users SET password = ? WHERE id = ?', [hashed, userId]);
+    await db.query('UPDATE users SET password = ?, must_change_password = FALSE WHERE id = ?', [hashed, userId]);
     return res.json({ changed: true });
   } catch (err) {
     console.error('Change password error:', err);
@@ -145,7 +141,7 @@ export const resetPassword = async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ message: 'User not found' });
     const user = rows[0];
     const hashed = await bcrypt.hash(new_password, 10);
-    await db.query('UPDATE users SET password = ? WHERE id = ?', [hashed, user.id]);
+    await db.query('UPDATE users SET password = ?, must_change_password = FALSE WHERE id = ?', [hashed, user.id]);
     pendingResets.delete(email);
     // Auto-login
     const token = jwt.sign({ id: user.id, email: user.email, user_type: user.user_type }, process.env.JWT_SECRET, { expiresIn: '1d' });

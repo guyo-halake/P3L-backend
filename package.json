@@ -5,9 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "migrate": "node scripts/migrate.js",
+    "seed:db": "node scripts/seed-db.js",
+    "seed:admin": "node scripts/seed-admin.js",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@notionhq/client": "^5.9.0",
     "axios": "^1.13.4",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
@@ -15,13 +20,20 @@
     "express": "^4.18.2",
     "express-session": "^1.19.0",
     "jsonwebtoken": "^9.0.3",
+    "katex": "^0.16.28",
     "mysql2": "^3.9.7",
     "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.12",
+    "notion-types": "^7.7.3",
+    "notion-utils": "^7.7.3",
+    "prismjs": "^1.30.0",
     "react-icons": "^5.5.0",
+    "react-notion-x": "^7.7.3",
+    "recharts": "^3.7.0",
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
-    "nodemon": "^3.0.3"
+    "nodemon": "^3.0.3",
+    "vitest": "^4.0.18"
   }
 }
