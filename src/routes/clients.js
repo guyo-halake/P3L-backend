@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createClient, getClients } from '../controllers/clientController.js';
+import { createClient, getClients, getClientById, updateClientById } from '../controllers/clientController.js';
 
 const router = Router();
 
@@ -8,5 +8,11 @@ router.post('/', createClient);
 
 // GET /api/clients - get all clients
 router.get('/', getClients);
+
+// GET /api/clients/:id - get one client
+router.get('/:id', getClientById);
+
+// PUT /api/clients/:id - update client
+router.put('/:id', updateClientById);
 
 export default router;

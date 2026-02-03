@@ -1,9 +1,12 @@
 
 import express from 'express';
-import { updateGitHubToken, setProjectUsers, getVisibleProjects, getUserProfile, updateUserProfile, listUsers, addUser, updateUserType, deleteUser } from '../controllers/userSettingsController.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
-const router = express.Router();
+import { updateGitHubToken, setProjectUsers, getVisibleProjects, getUserProfile, updateUserProfile, listUsers, addUser, updateUserType, deleteUser, saveInvite, updateInviteStatus, listInvites, getInviteInfo, acceptInvite } from '../controllers/userSettingsController.js';
 
+const router = express.Router();
+// Onboarding endpoints
+router.get('/invite-info', getInviteInfo);
+router.post('/accept-invite', acceptInvite);
 
 // User management (admin only)
 const allowRoles = (roles) => (req, res, next) => {
@@ -12,6 +15,11 @@ const allowRoles = (roles) => (req, res, next) => {
 	}
 	next();
 };
+
+// --- INVITES API ---
+router.post('/invites', authenticateToken, allowRoles(['full_admin', 'dev']), saveInvite);
+router.put('/invites/status', authenticateToken, allowRoles(['full_admin', 'dev']), updateInviteStatus);
+router.get('/invites', authenticateToken, allowRoles(['full_admin', 'dev']), listInvites);
 
 router.get('/users', authenticateToken, allowRoles(['full_admin', 'dev']), listUsers);
 router.post('/users', authenticateToken, allowRoles(['full_admin', 'dev']), addUser);
