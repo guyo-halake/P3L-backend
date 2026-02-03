@@ -11,7 +11,7 @@ export const getGitHubRepoActivity = async (req, res) => {
         const [rows] = await db.execute('SELECT github_token FROM users WHERE id = ?', [user_id]);
         if (rows.length && rows[0].github_token) githubToken = rows[0].github_token;
       }
-    } catch {}
+    } catch { }
     // Fetch commits (last 30)
     const commitsRes = await axios.get(`https://api.github.com/repos/${owner}/${repo}/commits`, {
       headers: {
@@ -202,6 +202,7 @@ export const saveVercelProject = async (req, res) => {
   }
 };
 import db from '../config/db.js';
+import { notifyAdminNewProject } from './emailController.js';
 
 
 // Create a new project (matching new schema)
@@ -226,6 +227,16 @@ export const createProject = async (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       params
     );
+
+    // Send Admin Notification asynchronously
+    notifyAdminNewProject({
+      name,
+      client_id, // We'd ideally want the name, but ID is what we have handy
+      description,
+      status: status || 'active',
+      github_repo,
+      vercel_url
+    });
 
     res.status(201).json({ id: result.insertId, ...req.body });
   } catch (error) {

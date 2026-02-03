@@ -1,22 +1,45 @@
 // --- GitHub OAuth Setup ---
 
-const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-const CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
-const REDIRECT_URI = process.env.GITHUB_REDIRECT_URI || process.env.PROD_REDIRECT_URI || 'http://localhost:5000/api/github/callback';
 import axios from 'axios';
 import db from '../config/db.js';
 
 // Step 1: Redirect user to GitHub for login
 
 export const githubLogin = (req, res) => {
+  const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
+  const REDIRECT_URI = process.env.GITHUB_REDIRECT_URI || process.env.PROD_REDIRECT_URI || 'http://localhost:5000/api/github/callback';
+
+  if (!CLIENT_ID) {
+    console.error("GITHUB_CLIENT_ID is missing in backend env!");
+    return res.status(500).send("Server Error: Missing GitHub Client ID");
+  }
+
   const scope = encodeURIComponent('repo read:user user:email');
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scope}`;
+  // prompt=consent ensures the user is asked to authorize every time, complying with "request access"
+  // Pass returnTo URL and user_id in the state parameter to preserve it through the OAuth flow
+  const returnTo = req.query.returnTo;
+  const userId = req.query.user_id;
+
+  const stateObj = {
+    returnTo: returnTo || '',
+    userId: userId || ''
+  };
+  const state = Buffer.from(JSON.stringify(stateObj)).toString('base64');
+
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scope}&prompt=consent&state=${state}`;
+  console.log("Redirecting to GitHub Auth:", githubAuthUrl);
   res.redirect(githubAuthUrl);
 };
 
 // Step 2: GitHub redirects back with code, exchange for access token
 
+// Step 2: GitHub redirects back with code, exchange for access token
+
 export const githubCallback = async (req, res) => {
+  const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
+  const CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
+  const REDIRECT_URI = process.env.GITHUB_REDIRECT_URI || process.env.PROD_REDIRECT_URI || 'http://localhost:5000/api/github/callback';
+
   const code = req.query.code;
   try {
     // Exchange code for access token
@@ -84,10 +107,102 @@ export const githubCallback = async (req, res) => {
       await db.execute('UPDATE users SET github_token = ? WHERE email = ?', [accessToken, primaryEmail]);
     }
     req.session.githubToken = accessToken;
+
+    // Check for returnTo in state
+    // Check for state to get returnTo and userId
+    const state = req.query.state;
+    let returnTo = null;
+    let userId = null;
+
+    if (state) {
+      try {
+        const stateStr = Buffer.from(state, 'base64').toString('ascii');
+        // Try parsing as JSON (new format)
+        try {
+          const data = JSON.parse(stateStr);
+          returnTo = data.returnTo;
+          userId = data.userId;
+        } catch (e) {
+          // Fallback for old format (just returnTo string)
+          returnTo = stateStr;
+        }
+      } catch (e) {
+        console.error("Failed to decode state:", e);
+      }
+    }
+
+    if (userId) {
+      console.log(`Linking GitHub token to existing User ID: ${userId}`);
+      await db.execute('UPDATE users SET github_token = ? WHERE id = ?', [accessToken, userId]);
+    } else {
+      // Fallback: Identify user by GitHub email
+      // Fetch GitHub user profile
+      const userRes = await axios.get('https://api.github.com/user', {
+        headers: { Authorization: `token ${accessToken}`, 'User-Agent': 'P3L-App', Accept: 'application/vnd.github+json' }
+      });
+
+      // ... (existing email fetching logic reused)
+      let emailRes = null;
+      try {
+        emailRes = await axios.get('https://api.github.com/user/emails', {
+          headers: { Authorization: `token ${accessToken}`, 'User-Agent': 'P3L-App', Accept: 'application/vnd.github+json' }
+        });
+      } catch (e) {
+        if (e.response?.status !== 403) throw e;
+      }
+      const githubUser = userRes.data;
+      let primaryEmail = githubUser.email;
+      if (!primaryEmail && Array.isArray(emailRes?.data)) {
+        const primaryObj = emailRes.data.find(e => e.primary && e.verified);
+        if (primaryObj) primaryEmail = primaryObj.email;
+      }
+      if (!primaryEmail) {
+        const login = githubUser.login || 'githubuser';
+        const id = githubUser.id || Math.floor(Math.random() * 1e9);
+        primaryEmail = `${id}+${login}@users.noreply.github.com`;
+      }
+
+      const [existing] = await db.execute('SELECT id FROM users WHERE email = ?', [primaryEmail]);
+      if (existing.length === 0) {
+        await db.execute(
+          'INSERT INTO users (username, email, password, avatar, github_token, user_type) VALUES (?, ?, ?, ?, ?, ?)',
+          [githubUser.login, primaryEmail, '', githubUser.avatar_url || null, accessToken, 'dev']
+        );
+      } else {
+        await db.execute('UPDATE users SET github_token = ? WHERE email = ?', [accessToken, primaryEmail]);
+      }
+    }
+
+    req.session.githubToken = accessToken;
+
+    // Redirect logic
+    if (returnTo) {
+      if (returnTo.startsWith('/') || returnTo.startsWith('http://localhost')) {
+        console.log("Redirecting user back to:", returnTo);
+        return res.redirect(process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}${returnTo}` : `http://localhost:8080${returnTo}`);
+      }
+    }
+
+    // Default redirect if no returnTo
     res.redirect(process.env.FRONTEND_REDIRECT_URI || 'http://localhost:8080/github');
   } catch (err) {
     const status = err.response?.status || 500;
     const data = err.response?.data || {};
+
+    // Friendly error page or JSON? JSON for now but better message.
+    if (status === 403 && data.message?.includes("rate limit")) {
+      return res.status(403).send(`
+            <html>
+            <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+                <h1>GitHub Rate Limit Exceeded</h1>
+                <p>We are making too many requests to GitHub. Please wait a few minutes and try again.</p>
+                <p>Status: ${status}</p>
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:8080'}">Return to Dashboard</a>
+            </body>
+            </html>
+        `);
+    }
+
     res.status(status).json({ error: 'OAuth failed', details: err.message, githubResponse: data });
   }
 };
@@ -101,15 +216,23 @@ async function getGithubTokenForUser(user_id) {
 // Get all GitHub repos for the authenticated user (owner + member)
 export const getAllGitHubRepos = async (req, res) => {
   const { user_id } = req.query;
-  if (!user_id) {
-    return res.status(400).json({ message: 'user_id is required' });
-  }
-  try {
+
+  let githubToken = req.session?.githubToken;
+
+  // If no session token, try to find it by user_id
+  if (!githubToken && user_id) {
     const [rows] = await db.execute('SELECT github_token FROM users WHERE id = ?', [user_id]);
-    if (rows.length === 0 || !rows[0].github_token) {
-      return res.status(404).json({ message: 'GitHub token not found for user' });
+    if (rows.length > 0) {
+      githubToken = rows[0].github_token;
     }
-    const githubToken = rows[0].github_token;
+  }
+
+  if (!githubToken) {
+    // Return empty array instead of 401 to avoid console errors
+    return res.json([]);
+  }
+
+  try {
     // Fetch all repos (owner + member)
     const response = await axios.get('https://api.github.com/user/repos?type=all&sort=updated', {
       headers: {
@@ -119,28 +242,56 @@ export const getAllGitHubRepos = async (req, res) => {
     });
     res.json(response.data);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch all GitHub repos', error: error.message });
+    const status = error.response?.status || 500;
+    // If token is invalid (revoked), return empty list and maybe flag user?
+    if (status === 401) return res.json([]);
+    res.status(status).json({ message: 'Failed to fetch all GitHub repos', error: error.message, githubResponse: error.response?.data });
   }
 };
+
+// Simple in-memory cache for token validation: { userId: { user: Object, timestamp: Number } }
+const userValidationCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 // Validate current GitHub token by calling /user
 export const getGithubMe = async (req, res) => {
   try {
     const { user_id } = req.query;
     if (!user_id) return res.status(400).json({ message: 'user_id is required' });
+
+    // Check Cache
+    const cached = userValidationCache.get(user_id);
+    if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+      return res.json({ valid: true, user: cached.user });
+    }
+
     const githubToken = await getGithubTokenForUser(user_id);
     if (!githubToken) {
-      return res.status(401).json({ message: 'invalid token', details: 'Missing GitHub token for user' });
+      // Return 200 with valid:false so frontend doesn't log network error
+      return res.json({ valid: false, message: 'No GitHub token found' });
     }
     const userRes = await axios.get('https://api.github.com/user', {
       headers: { Authorization: `token ${githubToken}`, 'User-Agent': 'P3L-App', Accept: 'application/vnd.github+json' }
     });
+
+    // Update Cache
+    userValidationCache.set(user_id, { user: userRes.data, timestamp: Date.now() });
+
     return res.json({ valid: true, user: userRes.data });
   } catch (error) {
     const status = error.response?.status || 500;
     if (status === 401) {
-      return res.status(401).json({ message: 'invalid token', githubResponse: error.response?.data });
+      // Token expired/revoked
+      return res.json({ valid: false, message: 'Token expired' });
     }
+    // If rate limited, maybe return cached if available (stale-while-revalidate logic)?
+    // For now just error but check status
+    if (status === 403 && error.response?.data?.message?.includes("rate limit")) {
+      // If we have STALE cache, return it to keep app working?
+      const cached = userValidationCache.get(req.query.user_id);
+      if (cached) return res.json({ valid: true, user: cached.user, warning: 'Rate limited, serving stale data' });
+    }
+
     return res.status(status).json({ message: 'GitHub token validation failed', error: error.message, githubResponse: error.response?.data });
   }
 };
