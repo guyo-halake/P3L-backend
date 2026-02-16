@@ -5,6 +5,118 @@ import jwt from 'jsonwebtoken';
 // In-memory store for password reset codes (fast implementation)
 const pendingResets = new Map(); // key: email, value: { code, expiresAt }
 
+import { sendMailInternal } from './emailController.js';
+
+export const getUserTypes = async (req, res) => {
+  // Return the allowed ENUM values for frontend mapping
+  const types = [
+    { value: 'dev', label: 'Developer (User)' },
+    { value: 'full_admin', label: 'Full Admin' },
+    { value: 'client', label: 'Client' },
+    { value: 'user', label: 'Standard User' }
+  ];
+  res.json(types);
+};
+
+export const sendInviteEmail = async (req, res) => {
+  const { username, email } = req.body;
+  if (!email) return res.status(400).json({ message: 'Email is required' });
+  
+  // Template 1: Inquiry
+  // "Hey {username}, welcome to P3L Developers..."
+  const nameToUse = username || "User";
+  const html = `
+    <p>Hey <strong>${nameToUse}</strong>,</p>
+    <p>Welcome to <strong>P3L Developers</strong>. You have been invited to use the P3L MS.</p>
+    <p>Please reply to this email with your preferred email and password.</p>
+    <p>Alternatively you can automatically log in using your GitHub.</p>
+    <br/>
+    <p>A confirmation email/whatsapp text will be sent upon account creation.</p>
+    <br/>
+    <p>Thank you</p>
+    <p>-p3ldeveloper</p>
+  `;
+
+  try {
+     // Record the invitation
+     await db.query(
+        'INSERT INTO invitations (invitee_email, invitee_name, status) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE status = VALUES(status), invite_date = CURRENT_TIMESTAMP',
+        [email, username, 'pending']
+     );
+
+     await sendMailInternal({
+        to: email,
+        subject: 'Invitation to P3L Developers',
+        html: html,
+        text: html.replace(/<[^>]*>?/gm, '') // Fallback text
+     });
+     res.json({ message: 'Invitation email sent' });
+  } catch (err) {
+     console.error('Send invite error:', err);
+     res.status(500).json({ message: 'Failed to send email' });
+  }
+};
+
+export const inviteUser = async (req, res) => {
+  // This function is now effectively "Create User From Invite"
+  const { username, email, phone, userType, password, confirmPassword } = req.body;
+  
+  if (!username || !email || !password || !confirmPassword) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({ message: 'Passwords do not match' });
+  }
+
+  try {
+    // 1. Check if user exists
+    const [existing] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+    if (existing.length > 0) {
+      return res.status(409).json({ message: 'Email already registered' });
+    }
+
+    // 2. Hash password
+    const hashed = await bcrypt.hash(password, 10);
+
+    // 3. Insert into DB
+    const [result] = await db.query(
+      'INSERT INTO users (username, email, phone, user_type, password) VALUES (?, ?, ?, ?, ?)',
+      [username, email, phone || null, userType || 'dev', hashed]
+    );
+
+    // Update invitation status
+    await db.query("UPDATE invitations SET status = 'approved' WHERE invitee_email = ?", [email]);
+
+    // 4. Send Confirmation Email
+    // "Hi {username}, your account has been created..."
+    const appUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const html = `
+      <p>Hi, <strong>${username}</strong>,</p>
+      <p>Your account has been created.</p>
+      <p>Visit the following link to log in: <a href="${appUrl}">${appUrl}</a></p>
+      <p>Prefer using your laptop.</p> 
+    `;
+    
+    try {
+        await sendMailInternal({
+            to: email, 
+            subject: 'Account Created - P3L Developers',
+            html: html,
+            text: `Hi ${username}, your account has been created. Visit ${appUrl} to log in.`
+        });
+    } catch (emailErr) {
+        console.error('Failed to send confirmation email:', emailErr);
+    }
+
+    res.status(201).json({ message: 'User created and confirmation sent', userId: result.insertId });
+
+  } catch (err) {
+    console.error('Create user error:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 export const register = async (req, res) => {
   return res.status(403).json({ message: 'Registration is currently disabled.' });
   /*

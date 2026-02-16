@@ -22,12 +22,32 @@ import activityRoutes from './routes/activity.js';
 import schoolsRoutes from './routes/schools.js';
 import tryhackmeRoutes from './routes/tryhackme.js';
 import notionRoutes from './routes/notionRoutes.js';
+import notificationRoutes from './routes/notifications.js';
+import inviteRoutes from './routes/invites.js';
 // import mockRoutes from './routes/mock.js'; // Only enable in development
+import { checkEmailReplies } from './services/emailListener.js';
+import lecturerRoutes from './routes/lecturers.js';
+import classroomRoutes from './routes/classrooms.js';
+import classTimeRoutes from './routes/classTimes.js';
+import examRoutes from './routes/exams.js';
+import documentRoutes from './routes/documents.js';
 
 dotenv.config();
 
 // Debug: Print DB config values
 console.log('DB config:', process.env.DB_HOST, process.env.DB_USER, process.env.DB_NAME);
+
+// Start email listener loop (every 5 minutes)
+const EMAIL_CHECK_INTERVAL = 5 * 60 * 1000;
+setInterval(() => {
+  checkEmailReplies().catch(err => console.error('Email check failed:', err));
+}, EMAIL_CHECK_INTERVAL);
+
+// Initial check on startup (delayed slightly to allow DB connection)
+setTimeout(() => {
+   checkEmailReplies().catch(err => console.error('Initial email check failed:', err));
+}, 5000);
+
 
 const app = express();
 // Resolve project paths for static serving in production
@@ -72,9 +92,26 @@ app.use('/api/messages', (req, res, next) => {
 }, messageRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/schools', schoolsRoutes);
+import assignmentsRoutes from './routes/assignments.js';
+app.use('/api/assignments', assignmentsRoutes);
+import labsRoutes from './routes/labs.js';
+app.use('/api/labs', labsRoutes);
+import feesRoutes from './routes/fees.js';
+app.use('/api/fees', feesRoutes);
+import reportsRoutes from './routes/reports.js';
+app.use('/api/reports', reportsRoutes);
+import unitsRoutes from './routes/units.js';
+app.use('/api/units', unitsRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/notion', notionRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/invitations', inviteRoutes);
+app.use('/api/lecturers', lecturerRoutes);
+app.use('/api/classrooms', classroomRoutes);
+app.use('/api/class-times', classTimeRoutes);
+app.use('/api/exams', examRoutes);
+app.use('/api/documents', documentRoutes);
 // Only enable mock routes in development
 let mockRoutes;
 if (process.env.NODE_ENV === 'development') {
