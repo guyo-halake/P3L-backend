@@ -32,6 +32,7 @@ import classTimeRoutes from './routes/classTimes.js';
 import examRoutes from './routes/exams.js';
 import documentRoutes from './routes/documents.js';
 import attendanceRoutes from './routes/attendance.js';
+import { saveMessage } from './controllers/messageController.js';
 
 dotenv.config();
 
@@ -46,7 +47,7 @@ setInterval(() => {
 
 // Initial check on startup (delayed slightly to allow DB connection)
 setTimeout(() => {
-   checkEmailReplies().catch(err => console.error('Initial email check failed:', err));
+  checkEmailReplies().catch(err => console.error('Initial email check failed:', err));
 }, 5000);
 
 
@@ -67,6 +68,7 @@ setIO(io);
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 import expressSession from 'express-session';
 
@@ -94,6 +96,8 @@ app.use('/api/messages', (req, res, next) => {
 app.use('/api/groups', groupRoutes);
 app.use('/api/schools', schoolsRoutes);
 import assignmentsRoutes from './routes/assignments.js';
+import usersRoutes from './routes/users.js';
+app.use('/api/users', usersRoutes);
 app.use('/api/assignments', assignmentsRoutes);
 import labsRoutes from './routes/labs.js';
 app.use('/api/labs', labsRoutes);
@@ -114,6 +118,9 @@ app.use('/api/class-times', classTimeRoutes);
 app.use('/api/exams', examRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/attendance', attendanceRoutes);
+
+import invoiceRoutes from './routes/invoices.js';
+app.use('/api/invoices', invoiceRoutes);
 // Only enable mock routes in development
 let mockRoutes;
 if (process.env.NODE_ENV === 'development') {
@@ -151,8 +158,24 @@ io.on('connection', (socket) => {
   });
 
 
-  socket.on('send_message', (data) => {
+  // ... (inside socket connection)
+
+  socket.on('send_message', async (data) => {
     // data: { to, from, message, timestamp, groupId }
+    console.log('Received message:', data);
+
+    try {
+      await saveMessage({
+        from: data.from,
+        to: data.to,
+        message: data.message,
+        timestamp: data.timestamp,
+        groupId: data.groupId
+      });
+    } catch (err) {
+      console.error('Failed to save message:', err);
+    }
+
     if (data.groupId) {
       // Group message: broadcast to the group room
       io.to(`group_${data.groupId}`).emit('receive_message', data);

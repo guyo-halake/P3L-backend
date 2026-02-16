@@ -1,3 +1,6 @@
+import db from '../config/db.js';
+import { sendOnboardingEmail } from '../services/emailService.js';
+
 // Assign a project to a client
 export const assignProjectToClient = async (req, res) => {
   try {
@@ -25,17 +28,35 @@ export const assignProjectToClient = async (req, res) => {
     res.status(500).json({ message: 'Failed to assign project to client', error: error.message });
   }
 };
-import db from '../config/db.js';
 
 // Create a new client
 export const createClient = async (req, res) => {
   try {
-    const { name, initials, project, status, lastMessage, unread, phone, email } = req.body;
+    const { name, initials, project, status, lastMessage, unread, phone, email, type, sendOnboarding } = req.body;
+    // Derive initials if not provided (though frontend usually does)
+    // We expect 'type' to be passed from frontend
     const [result] = await db.execute(
-      `INSERT INTO clients (name, initials, project, status, lastMessage, unread, phone, email)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, initials, project, status, lastMessage, unread, phone, email]
+      `INSERT INTO clients (name, initials, project, status, lastMessage, unread, phone, email, type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        name,
+        initials || null,
+        project || null,
+        status || 'Onboarded',
+        lastMessage || '',
+        unread || 0,
+        phone || null,
+        email || null,
+        type || 'p3l'
+      ]
     );
+
+    // Send Onboarding Email if requested
+    if (sendOnboarding && email) {
+      // Run asynchronously, don't block response
+      sendOnboardingEmail(name, email).catch(err => console.error("Async email error:", err));
+    }
+
     res.status(201).json({ id: result.insertId, ...req.body });
   } catch (error) {
     console.error('Error creating client:', error);
@@ -105,7 +126,9 @@ export const updateClientById = async (req, res) => {
     if (lastMessage !== undefined) { fields.push('lastMessage = ?'); params.push(lastMessage); }
     if (unread !== undefined) { fields.push('unread = ?'); params.push(unread); }
     if (phone !== undefined) { fields.push('phone = ?'); params.push(phone); }
+    if (phone !== undefined) { fields.push('phone = ?'); params.push(phone); }
     if (email !== undefined) { fields.push('email = ?'); params.push(email); }
+    if (req.body.type !== undefined) { fields.push('type = ?'); params.push(req.body.type); }
     if (fields.length === 0) return res.status(400).json({ message: 'No fields to update' });
     params.push(id);
     const [result] = await db.execute(`UPDATE clients SET ${fields.join(', ')} WHERE id = ?`, params);
