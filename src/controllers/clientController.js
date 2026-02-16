@@ -1,3 +1,30 @@
+// Assign a project to a client
+export const assignProjectToClient = async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    const { projectId } = req.body;
+    if (!clientId || !projectId) {
+      return res.status(400).json({ message: 'clientId and projectId are required' });
+    }
+
+    // Update the project to set its client_id
+    const [result] = await db.execute(
+      'UPDATE projects SET client_id = ? WHERE id = ?',
+      [clientId, projectId]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Project not found or already assigned' });
+    }
+
+    // Optionally, update the client record to reflect the project (if you want to keep a reference)
+    // await db.execute('UPDATE clients SET project = ? WHERE id = ?', [projectId, clientId]);
+
+    res.json({ success: true, clientId, projectId });
+  } catch (error) {
+    console.error('Error assigning project to client:', error);
+    res.status(500).json({ message: 'Failed to assign project to client', error: error.message });
+  }
+};
 import db from '../config/db.js';
 
 // Create a new client

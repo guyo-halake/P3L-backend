@@ -31,6 +31,7 @@ import classroomRoutes from './routes/classrooms.js';
 import classTimeRoutes from './routes/classTimes.js';
 import examRoutes from './routes/exams.js';
 import documentRoutes from './routes/documents.js';
+import attendanceRoutes from './routes/attendance.js';
 
 dotenv.config();
 
@@ -112,6 +113,7 @@ app.use('/api/classrooms', classroomRoutes);
 app.use('/api/class-times', classTimeRoutes);
 app.use('/api/exams', examRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/attendance', attendanceRoutes);
 // Only enable mock routes in development
 let mockRoutes;
 if (process.env.NODE_ENV === 'development') {
