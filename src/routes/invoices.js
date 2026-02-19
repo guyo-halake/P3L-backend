@@ -1,5 +1,5 @@
 import express from 'express';
-import { getInvoicesByClientId, createInvoice, updateInvoiceStatus, deleteInvoice } from '../controllers/invoiceController.js';
+import { getAllInvoices, getInvoicesByClientId, createInvoice, updateInvoiceStatus, deleteInvoice } from '../controllers/invoiceController.js';
 
 import multer from 'multer';
 import path from 'path';
@@ -17,6 +17,7 @@ const upload = multer({ storage: storage });
 
 const router = express.Router();
 
+router.get('/', getAllInvoices);
 router.get('/client/:clientId', getInvoicesByClientId);
 router.post('/', upload.single('file'), createInvoice);
 router.put('/:id/status', updateInvoiceStatus);

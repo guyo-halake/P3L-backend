@@ -1,5 +1,6 @@
 import db from '../config/db.js';
 import { sendOnboardingEmail } from '../services/emailService.js';
+import { logActivity } from '../utils/activityLogger.js';
 
 // Assign a project to a client
 export const assignProjectToClient = async (req, res) => {
@@ -23,6 +24,8 @@ export const assignProjectToClient = async (req, res) => {
     // await db.execute('UPDATE clients SET project = ? WHERE id = ?', [projectId, clientId]);
 
     res.json({ success: true, clientId, projectId });
+    const assigner = req.user ? req.user.username : 'System';
+    logActivity('client', `Project #${projectId} assigned to Client #${clientId} by ${assigner}`, { clientId, projectId, assigner });
   } catch (error) {
     console.error('Error assigning project to client:', error);
     res.status(500).json({ message: 'Failed to assign project to client', error: error.message });
@@ -56,6 +59,9 @@ export const createClient = async (req, res) => {
       // Run asynchronously, don't block response
       sendOnboardingEmail(name, email).catch(err => console.error("Async email error:", err));
     }
+
+    const creator = req.user ? req.user.username : 'Admin';
+    logActivity('client', `New client "${name}" added by ${creator}`, { clientId: result.insertId, email, creator });
 
     res.status(201).json({ id: result.insertId, ...req.body });
   } catch (error) {

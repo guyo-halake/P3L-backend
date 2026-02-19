@@ -186,6 +186,7 @@ export const saveVercelProject = async (req, res) => {
     );
 
     res.status(201).json({ id: result.insertId, ...req.body });
+    logActivity('project', `Vercel project "${name}" imported`, { projectId: result.insertId, vercelUrl: vercel_url });
   } catch (error) {
     console.error('Error saving Vercel project:', error);
     if (error && error.sqlMessage) {
@@ -203,7 +204,7 @@ export const saveVercelProject = async (req, res) => {
 };
 import db from '../config/db.js';
 import { notifyAdminNewProject } from './emailController.js';
-
+import { logActivity } from '../utils/activityLogger.js';
 
 // Create a new project (matching new schema)
 export const createProject = async (req, res) => {
@@ -217,26 +218,49 @@ export const createProject = async (req, res) => {
       description,
       status,
       github_repo,
-      vercel_url
+      vercel_url,
+      type,
+      tech_stack,
+      progress,
+      next_milestone,
+      milestone_date
     } = req.body;
 
-    const params = [user_id, client_id, name, description, status, github_repo, vercel_url].map(v => v === undefined ? null : v);
+    const params = [
+      user_id,
+      client_id,
+      name,
+      description,
+      status,
+      github_repo,
+      vercel_url,
+      type,
+      tech_stack ? JSON.stringify(tech_stack) : null,
+      progress || 0,
+      next_milestone,
+      milestone_date
+    ].map(v => v === undefined ? null : v);
 
     const [result] = await db.execute(
-      `INSERT INTO projects (user_id, client_id, name, description, status, github_repo, vercel_url)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO projects (user_id, client_id, name, description, status, github_repo, vercel_url, type, tech_stack, progress, next_milestone, milestone_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       params
     );
 
     // Send Admin Notification asynchronously
     notifyAdminNewProject({
       name,
-      client_id, // We'd ideally want the name, but ID is what we have handy
+      client_id,
       description,
       status: status || 'active',
       github_repo,
-      vercel_url
+      vercel_url,
+      type
     });
+
+    // Log System Activity
+    const creatorName = req.user ? req.user.username : 'Unknown User';
+    logActivity('project', `New project "${name}" created by ${creatorName}`, { projectId: result.insertId, user_id, creator: creatorName });
 
     res.status(201).json({ id: result.insertId, ...req.body });
   } catch (error) {
@@ -259,13 +283,17 @@ export const createProject = async (req, res) => {
 // Get all projects (matching new schema)
 export const getProjects = async (req, res) => {
   try {
-    // Join clients to get client name as 'client'
+    // Join clients to get client name as 'client', and users to get assignee details
     const [rows] = await db.execute(`
       SELECT 
-        p.id, p.user_id, p.client_id, p.name, p.description, p.status, p.github_repo, p.vercel_url, p.created_at,
-        c.name AS client
+        p.id, p.user_id, p.client_id, p.name, p.description, p.status, p.github_repo, p.vercel_url, p.created_at, p.type,
+        p.tech_stack, p.progress, p.next_milestone, p.milestone_date,
+        c.name AS client,
+        u.username AS assigned_user_name,
+        u.avatar AS assigned_user_avatar
       FROM projects p
       LEFT JOIN clients c ON p.client_id = c.id
+      LEFT JOIN users u ON p.user_id = u.id
       ORDER BY p.created_at DESC
     `);
     res.json(rows);
@@ -296,6 +324,8 @@ export const deleteProject = async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Project not found' });
     }
+    const deleterName = req.user ? req.user.username : 'Admin';
+    logActivity('project', `Project #${id} deleted by ${deleterName}`, { projectId: id, deleter: deleterName });
     res.json({ success: true });
   } catch (error) {
     console.error('Error deleting project:', error);
@@ -308,7 +338,11 @@ export const updateProject = async (req, res) => {
   try {
     const { id } = req.params;
     if (!id) return res.status(400).json({ message: 'Project id is required' });
-    const { name, description, status, github_repo, vercel_url, client_id, user_id } = req.body;
+    const {
+      name, description, status, github_repo, vercel_url, client_id, user_id, type,
+      tech_stack, progress, next_milestone, milestone_date
+    } = req.body;
+
     const fields = [];
     const params = [];
     if (name !== undefined) { fields.push('name = ?'); params.push(name); }
@@ -318,6 +352,12 @@ export const updateProject = async (req, res) => {
     if (vercel_url !== undefined) { fields.push('vercel_url = ?'); params.push(vercel_url); }
     if (client_id !== undefined) { fields.push('client_id = ?'); params.push(client_id); }
     if (user_id !== undefined) { fields.push('user_id = ?'); params.push(user_id); }
+    if (type !== undefined) { fields.push('type = ?'); params.push(type); }
+    if (tech_stack !== undefined) { fields.push('tech_stack = ?'); params.push(JSON.stringify(tech_stack)); }
+    if (progress !== undefined) { fields.push('progress = ?'); params.push(progress); }
+    if (next_milestone !== undefined) { fields.push('next_milestone = ?'); params.push(next_milestone); }
+    if (milestone_date !== undefined) { fields.push('milestone_date = ?'); params.push(milestone_date); }
+
     if (fields.length === 0) {
       return res.status(400).json({ message: 'No fields to update' });
     }
@@ -328,5 +368,69 @@ export const updateProject = async (req, res) => {
   } catch (error) {
     console.error('Error updating project:', error);
     res.status(500).json({ message: 'Failed to update project', error: error.message });
+  }
+};
+
+// Assign a project to a user
+export const assignProject = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { user_id } = req.body;
+
+    if (!user_id) return res.status(400).json({ error: 'Missing user_id' });
+
+    const [result] = await db.execute('UPDATE projects SET user_id = ? WHERE id = ?', [user_id, id]);
+
+    if (result.affectedRows === 0) return res.status(404).json({ message: 'Project not found' });
+
+    // Create Notification
+    try {
+      await db.execute(
+        'INSERT INTO notifications (user_id, type, message, is_read, created_at) VALUES (?, ?, ?, FALSE, NOW())',
+        [user_id, 'project_assigned', `You have been assigned to project #${id}`]
+      );
+    } catch (e) { console.error('Failed to create notification', e); }
+
+    res.json({ success: true, message: 'Project assigned successfully' });
+
+    res.json({ success: true, message: 'Project assigned successfully' });
+
+    // Log Activity
+    const assignerName = req.user ? req.user.username : 'System';
+    logActivity('project', `Project #${id} assigned to User #${user_id} by ${assignerName}`, { projectId: id, assigneeId: user_id, assigner: assignerName });
+  } catch (error) {
+    console.error('Error assigning project:', error);
+    res.status(500).json({ error: 'Failed to assign project' });
+  }
+};
+
+// Share project via email
+export const shareProject = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email } = req.body;
+
+    if (!email) return res.status(400).json({ error: 'Missing email' });
+
+    const [project] = await db.execute('SELECT * FROM projects WHERE id = ?', [id]);
+    if (!project.length) return res.status(404).json({ error: 'Project not found' });
+
+    // Check if user exists with this email to notify them internally
+    const [users] = await db.execute('SELECT id FROM users WHERE email = ?', [email]);
+    if (users.length > 0) {
+      const userId = users[0].id;
+      await db.execute(
+        'INSERT INTO notifications (user_id, type, message, is_read, created_at) VALUES (?, ?, ?, FALSE, NOW())',
+        [userId, 'project_shared', `Project "${project[0].name}" has been shared with you.`]
+      );
+    }
+
+    // Mock email sending for now or use internal helper if imported
+    console.log(`[Share] Project ${id} shared with ${email}`);
+
+    res.json({ success: true, message: `Project shared with ${email}` });
+  } catch (error) {
+    console.error('Error sharing project:', error);
+    res.status(500).json({ error: 'Failed to share project' });
   }
 };

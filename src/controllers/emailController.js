@@ -2,6 +2,7 @@
 import nodemailer from 'nodemailer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { logActivity } from '../utils/activityLogger.js';
 
 // Fix __filename and __dirname for ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -40,7 +41,12 @@ export async function sendEmail(req, res) {
   }
   try {
     await sendMailInternal({ to, subject, text });
-    res.json({ success: true });
+
+    // Log Activity
+    const user = req.user ? req.user.username : 'System';
+    logActivity('email', `Email sent to ${to} by ${user}`, { subject, user });
+
+    res.json({ success: true, message: 'Email sent successfully' });
   } catch (err) {
     console.error('EMAIL SEND ERROR:', err);
     res.status(500).json({ error: 'Failed to send email', details: err && err.message ? err.message : err });
@@ -66,6 +72,7 @@ export async function notifyAdminNewProject(project) {
     `;
 
     await sendMailInternal({ to: adminEmail, subject, text });
+    await logActivity('email', `Admin notified of new project: ${project.name}`, { project_id: project.id, type: 'notification' });
     console.log(`Notification sent to admin: ${adminEmail} for project ${project.name}`);
   } catch (err) {
     console.error("Failed to send admin notification:", err);

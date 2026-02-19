@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { getGitHubRepoActivity, createProject, getProjects, saveVercelProject, getVercelProjects, getVercelDeployments, getVercelDeploymentEvents, deleteProject, updateProject } from '../controllers/projectController.js';
+import { getGitHubRepoActivity, createProject, getProjects, saveVercelProject, getVercelProjects, getVercelDeployments, getVercelDeploymentEvents, deleteProject, updateProject, assignProject, shareProject } from '../controllers/projectController.js';
+
 const router = Router();
 // BULK DELETE projects
 router.post('/bulk-delete', async (req, res) => {
@@ -36,5 +37,11 @@ router.delete('/:id', deleteProject);
 
 // PUT /api/projects/:id - update a project
 router.put('/:id', updateProject);
+
+// POST /api/projects/:id/assign - assign project to user
+router.post('/:id/assign', assignProject);
+
+// POST /api/projects/:id/share - share project via email
+router.post('/:id/share', shareProject);
 
 export default router;

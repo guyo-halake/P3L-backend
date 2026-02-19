@@ -1,0 +1,53 @@
+node : file:///C:/P3L
+%20Projects/p3l-works
+pace-88/backend/src/i
+ndex.js:40
+At line:1 char:1
++ node src/index.js 
+> start_error.log 
+2>&1
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (file://   
+ /C:/P3L%...src/i    
+ndex.js:40:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+import { getFees, 
+createFee, 
+updateFee, deleteFee 
+} from './controllers
+/feeController.js';
+                  
+^^^^^^^^^
+SyntaxError: The 
+requested module './c
+ontrollers/feeControl
+ler.js' does not 
+provide an export 
+named 'createFee'
+    at 
+#asyncInstantiate (no
+de:internal/modules/e
+sm/module_job:302:21)
+    at async 
+ModuleJob.run (node:i
+nternal/modules/esm/m
+odule_job:405:5)
+    at async onImport
+.tracePromise.__proto
+__ (node:internal/mod
+ules/esm/loader:660:2
+6)
+    at async asyncRun
+EntryPointWithESMLoad
+er (node:internal/mod
+ules/run_main:101:5)
+
+Node.js v24.13.0
