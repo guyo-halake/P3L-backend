@@ -2,6 +2,7 @@
 
 import axios from 'axios';
 import db from '../config/db.js';
+import { logActivity } from '../utils/activityLogger.js';
 
 // Step 1: Redirect user to GitHub for login
 
@@ -374,6 +375,12 @@ export const getRepoIssues = async (req, res) => {
   }
 };
 
+// import { logActivity } from '../utils/activityLogger.js';
+
+// ... (existing imports)
+
+// ...
+
 // Create pull request
 export const createPullRequest = async (req, res) => {
   try {
@@ -381,15 +388,26 @@ export const createPullRequest = async (req, res) => {
     if (!owner || !repo || !title || !head || !base) {
       return res.status(400).json({ message: 'owner, repo, title, head, and base are required' });
     }
+
     const githubToken = await getGithubTokenForUser(user_id);
     if (!githubToken) return res.status(403).json({ message: 'GitHub token required' });
+
     const response = await axios.post(`https://api.github.com/repos/${owner}/${repo}/pulls`,
       { title, head, base, body },
-      { headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github.v3+json' } }
+      { headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github.v3+json', 'User-Agent': 'P3L-App' } }
     );
+
+    await logActivity('github', `Created PR: ${title} in ${owner}/${repo}`, {
+      repo: `${owner}/${repo}`,
+      pr_number: response.data.number,
+      url: response.data.html_url,
+      user_id
+    });
+
     res.status(201).json(response.data);
   } catch (error) {
-    res.status(error.response?.status || 500).json({ message: 'Failed to create pull request', error: error.message, githubResponse: error.response?.data });
+    const status = error.response?.status || 500;
+    res.status(status).json({ message: 'Failed to create pull request', error: error.message, githubResponse: error.response?.data });
   }
 };
 
@@ -397,41 +415,119 @@ export const createPullRequest = async (req, res) => {
 export const mergePullRequest = async (req, res) => {
   try {
     const { owner, repo, user_id, number, merge_method, commit_title } = req.body;
-    if (!owner || !repo || !number) return res.status(400).json({ message: 'owner, repo, and number are required' });
+    // ...
     const githubToken = await getGithubTokenForUser(user_id);
     if (!githubToken) return res.status(403).json({ message: 'GitHub token required' });
     const response = await axios.put(`https://api.github.com/repos/${owner}/${repo}/pulls/${number}/merge`,
       { merge_method: merge_method || 'merge', commit_title: commit_title || undefined },
       { headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github.v3+json' } }
     );
+
+    // Log Activity
+    await logActivity('github', `Merged PR #${number} in ${owner}/${repo}`, {
+      repo: `${owner}/${repo}`,
+      pr_number: number,
+      action: 'merge',
+      user_id
+    });
+
     res.json(response.data);
   } catch (error) {
-    res.status(error.response?.status || 500).json({ message: 'Failed to merge pull request', error: error.message, githubResponse: error.response?.data });
+    const status = error.response?.status || 500;
+    res.status(status).json({ message: 'Failed to merge pull request', error: error.message, githubResponse: error.response?.data });
   }
 };
 
-// Create a new branch from an existing ref
+// Create a new branch
 export const createBranch = async (req, res) => {
   try {
     const { owner, repo, user_id, new_branch, from_branch } = req.body;
-    if (!owner || !repo || !new_branch) return res.status(400).json({ message: 'owner, repo, and new_branch are required' });
+    if (!owner || !repo || !new_branch || !from_branch) {
+      return res.status(400).json({ message: 'owner, repo, new_branch, and from_branch are required' });
+    }
+
     const githubToken = await getGithubTokenForUser(user_id);
     if (!githubToken) return res.status(403).json({ message: 'GitHub token required' });
-    const baseBranch = from_branch || 'main';
-    // Get the base branch ref to extract the SHA
-    const refRes = await axios.get(`https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${baseBranch}`,
-      { headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github.v3+json' } }
-    );
-    const baseSha = refRes.data?.object?.sha;
-    if (!baseSha) return res.status(404).json({ message: 'Base branch SHA not found' });
-    // Create the new ref
+
+    // 1. Get SHA of the from_branch
+    const branchRes = await axios.get(`https://api.github.com/repos/${owner}/${repo}/branches/${from_branch}`, {
+      headers: { Authorization: `token ${githubToken}`, 'User-Agent': 'P3L-App' }
+    });
+    const baseSha = branchRes.data.commit.sha;
+
+    // 2. Create new reference
     const createRes = await axios.post(`https://api.github.com/repos/${owner}/${repo}/git/refs`,
       { ref: `refs/heads/${new_branch}`, sha: baseSha },
-      { headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github.v3+json' } }
+      { headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github.v3+json', 'User-Agent': 'P3L-App' } }
     );
+
+    await logActivity('github', `Created branch ${new_branch} in ${owner}/${repo}`, {
+      repo: `${owner}/${repo}`,
+      branch: new_branch,
+      user_id
+    });
+
     res.status(201).json(createRes.data);
   } catch (error) {
-    res.status(error.response?.status || 500).json({ message: 'Failed to create branch', error: error.message, githubResponse: error.response?.data });
+    const status = error.response?.status || 500;
+    res.status(status).json({ message: 'Failed to create branch', error: error.message, githubResponse: error.response?.data });
+  }
+};
+
+// Create an issue
+export const createIssue = async (req, res) => {
+  try {
+    const { owner, repo, user_id, title, body, labels } = req.body;
+    if (!owner || !repo || !title) {
+      return res.status(400).json({ message: 'owner, repo, and title are required' });
+    }
+
+    const githubToken = await getGithubTokenForUser(user_id);
+    if (!githubToken) return res.status(403).json({ message: 'GitHub token required' });
+
+    const response = await axios.post(`https://api.github.com/repos/${owner}/${repo}/issues`,
+      { title, body, labels: labels || [] },
+      { headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github.v3+json', 'User-Agent': 'P3L-App' } }
+    );
+
+    await logActivity('github', `Created issue: ${title} in ${owner}/${repo}`, {
+      repo: `${owner}/${repo}`,
+      issue_number: response.data.number,
+      url: response.data.html_url,
+      user_id
+    });
+
+    res.status(201).json(response.data);
+  } catch (error) {
+    const status = error.response?.status || 500;
+    res.status(status).json({ message: 'Failed to create issue', error: error.message, githubResponse: error.response?.data });
+  }
+};
+
+// Update an issue (labels/status)
+export const updateIssue = async (req, res) => {
+  try {
+    const { owner, repo, user_id, number, labels, state } = req.body;
+    if (!owner || !repo || !number) {
+      return res.status(400).json({ message: 'owner, repo, and issue number are required' });
+    }
+
+    const githubToken = await getGithubTokenForUser(user_id);
+    if (!githubToken) return res.status(403).json({ message: 'GitHub token required' });
+
+    const payload = {};
+    if (labels) payload.labels = labels;
+    if (state) payload.state = state;
+
+    const response = await axios.patch(`https://api.github.com/repos/${owner}/${repo}/issues/${number}`,
+      payload,
+      { headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github.v3+json', 'User-Agent': 'P3L-App' } }
+    );
+
+    res.json(response.data);
+  } catch (error) {
+    const status = error.response?.status || 500;
+    res.status(status).json({ message: 'Failed to update issue', error: error.message, githubResponse: error.response?.data });
   }
 };
 
@@ -517,3 +613,159 @@ export const getRepoLatestWorkflowRun = async (req, res) => {
     return res.status(status).json({ message: 'Failed to fetch latest workflow run', error: error.message, githubResponse: error.response?.data });
   }
 };
+
+// Add a collaborator to a repository
+export const addRepoCollaborator = async (req, res) => {
+  try {
+    const { owner, repo, username, permission, user_id } = req.body;
+    if (!owner || !repo || !username) {
+      return res.status(400).json({ message: 'owner, repo, and username are required' });
+    }
+
+    const githubToken = await getGithubTokenForUser(user_id);
+    if (!githubToken) {
+      return res.status(403).json({ message: 'GitHub token required. Please link your GitHub account.' });
+    }
+
+    // GitHub API: PUT /repos/{owner}/{repo}/collaborators/{username}
+    const url = `https://api.github.com/repos/${owner}/${repo}/collaborators/${username}`;
+    const response = await axios.put(url,
+      { permission: permission || 'push' },
+      {
+        headers: {
+          Authorization: `token ${githubToken}`,
+          Accept: 'application/vnd.github.v3+json',
+          'User-Agent': 'P3L-App'
+        }
+      }
+    );
+
+    // 201 Created (if dynamic) or 204 No Content (if already collaborator)
+    res.json({ success: true, message: `Invitation sent to ${username}`, data: response.data });
+  } catch (error) {
+    const status = error.response?.status || 500;
+    console.error('GitHub Collaborator Error:', error.response?.data || error.message);
+    res.status(status).json({
+      message: 'Failed to add collaborator',
+      error: error.message,
+      githubResponse: error.response?.data
+    });
+  }
+};
+
+// Fetch Languages
+export const getRepoLanguages = async (req, res) => {
+  try {
+    const { owner, repo, user_id } = req.query;
+    const githubToken = await getGithubTokenForUser(user_id);
+    if (!githubToken) return res.status(403).json({ message: 'GitHub token required' });
+
+    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/languages`, {
+      headers: { Authorization: `token ${githubToken}`, 'User-Agent': 'P3L-App' }
+    });
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({ message: 'Failed to fetch languages' });
+  }
+};
+
+// Fetch Releases
+export const getRepoReleases = async (req, res) => {
+  try {
+    const { owner, repo, user_id } = req.query;
+    const githubToken = await getGithubTokenForUser(user_id);
+    if (!githubToken) return res.status(403).json({ message: 'GitHub token required' });
+
+    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/releases`, {
+      headers: { Authorization: `token ${githubToken}`, 'User-Agent': 'P3L-App' }
+    });
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({ message: 'Failed to fetch releases' });
+  }
+};
+
+// Fetch Collaborators
+export const getRepoCollaborators = async (req, res) => {
+  try {
+    const { owner, repo, user_id } = req.query;
+    const githubToken = await getGithubTokenForUser(user_id);
+    if (!githubToken) return res.status(403).json({ message: 'GitHub token required' });
+
+    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/collaborators`, {
+      headers: { Authorization: `token ${githubToken}`, 'User-Agent': 'P3L-App' }
+    });
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({ message: 'Failed to fetch collaborators' });
+  }
+};
+
+// Fetch Workflows
+export const getRepoWorkflows = async (req, res) => {
+  try {
+    const { owner, repo, user_id } = req.query;
+    const githubToken = await getGithubTokenForUser(user_id);
+    if (!githubToken) return res.status(403).json({ message: 'GitHub token required' });
+
+    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/actions/workflows`, {
+      headers: { Authorization: `token ${githubToken}`, 'User-Agent': 'P3L-App' }
+    });
+    res.json(response.data.workflows);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({ message: 'Failed to fetch workflows' });
+  }
+};
+
+// Fetch Workflow Runs
+export const getRepoWorkflowRuns = async (req, res) => {
+  try {
+    const { owner, repo, user_id } = req.query;
+    const githubToken = await getGithubTokenForUser(user_id);
+    if (!githubToken) return res.status(403).json({ message: 'GitHub token required' });
+
+    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/actions/runs?per_page=10`, {
+      headers: { Authorization: `token ${githubToken}`, 'User-Agent': 'P3L-App' }
+    });
+    res.json(response.data.workflow_runs);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({ message: 'Failed to fetch workflow runs' });
+  }
+};
+
+// Fetch Repository Contents (Files/Folders)
+export const getRepoContents = async (req, res) => {
+  try {
+    const { owner, repo, user_id, path = '' } = req.query;
+    const githubToken = await getGithubTokenForUser(user_id);
+    if (!githubToken) return res.status(403).json({ message: 'GitHub token required' });
+
+    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+      headers: { Authorization: `token ${githubToken}`, 'User-Agent': 'P3L-App' }
+    });
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({ message: 'Failed to fetch contents' });
+  }
+};
+
+// Fetch Specific File Content
+export const getRepoFileContent = async (req, res) => {
+  try {
+    const { owner, repo, user_id, path } = req.query;
+    const githubToken = await getGithubTokenForUser(user_id);
+    if (!githubToken) return res.status(403).json({ message: 'GitHub token required' });
+
+    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+      headers: {
+        Authorization: `token ${githubToken}`,
+        'User-Agent': 'P3L-App',
+        Accept: 'application/vnd.github.v3.raw'
+      }
+    });
+    res.send(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({ message: 'Failed to fetch file content' });
+  }
+};
+

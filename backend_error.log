@@ -1,0 +1,208 @@
+2026-02-17T08:58:19.547Z - Incorrect datetime value: '2026-02-17T08:58:18.921Z' for column 'timestamp' at row 1
+Error: Incorrect datetime value: '2026-02-17T08:58:18.921Z' for column 'timestamp' at row 1
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:5:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:35:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-18T22:53:47.032Z - Incorrect datetime value: '2026-02-18T22:53:46.057Z' for column 'timestamp' at row 1
+Error: Incorrect datetime value: '2026-02-18T22:53:46.057Z' for column 'timestamp' at row 1
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:5:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:35:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-19T06:20:57.352Z - Incorrect datetime value: '2026-02-19T06:20:56.550Z' for column 'timestamp' at row 1
+Error: Incorrect datetime value: '2026-02-19T06:20:56.550Z' for column 'timestamp' at row 1
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:6:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:35:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-19T06:21:04.819Z - Incorrect datetime value: '2026-02-19T06:21:04.453Z' for column 'timestamp' at row 1
+Error: Incorrect datetime value: '2026-02-19T06:21:04.453Z' for column 'timestamp' at row 1
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:6:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:35:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-19T06:21:12.942Z - Incorrect datetime value: '2026-02-19T06:21:12.599Z' for column 'timestamp' at row 1
+Error: Incorrect datetime value: '2026-02-19T06:21:12.599Z' for column 'timestamp' at row 1
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:6:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:35:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-19T06:38:11.821Z - Data too long for column 'file_url' at row 1
+Error: Data too long for column 'file_url' at row 1
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:9:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:53:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-19T06:38:13.260Z - Data too long for column 'file_url' at row 1
+Error: Data too long for column 'file_url' at row 1
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:9:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:53:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-19T06:38:20.457Z - Data too long for column 'file_url' at row 1
+Error: Data too long for column 'file_url' at row 1
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:9:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:53:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-19T06:38:59.206Z - Data too long for column 'file_url' at row 1
+Error: Data too long for column 'file_url' at row 1
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:9:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:53:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-19T06:42:56.430Z - Data too long for column 'file_url' at row 1
+Error: Data too long for column 'file_url' at row 1
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:9:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:53:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-19T06:42:57.487Z - Data too long for column 'file_url' at row 1
+Error: Data too long for column 'file_url' at row 1
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:9:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:53:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-19T06:43:03.877Z - Data too long for column 'file_url' at row 1
+Error: Data too long for column 'file_url' at row 1
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:9:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:53:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-19T06:43:14.804Z - Data too long for column 'file_url' at row 1
+Error: Data too long for column 'file_url' at row 1
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:9:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:53:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-19T06:43:15.736Z - Data too long for column 'file_url' at row 1
+Error: Data too long for column 'file_url' at row 1
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:9:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:53:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-19T06:43:15.941Z - Data too long for column 'file_url' at row 1
+Error: Data too long for column 'file_url' at row 1
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:9:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:53:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-19T06:43:16.013Z - Data too long for column 'file_url' at row 1
+Error: Data too long for column 'file_url' at row 1
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:9:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:53:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+

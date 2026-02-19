@@ -1,14 +1,68 @@
 import db from '../config/db.js';
+import { sendOnboardingEmail } from '../services/emailService.js';
+import { logActivity } from '../utils/activityLogger.js';
+
+// Assign a project to a client
+export const assignProjectToClient = async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    const { projectId } = req.body;
+    if (!clientId || !projectId) {
+      return res.status(400).json({ message: 'clientId and projectId are required' });
+    }
+
+    // Update the project to set its client_id
+    const [result] = await db.execute(
+      'UPDATE projects SET client_id = ? WHERE id = ?',
+      [clientId, projectId]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Project not found or already assigned' });
+    }
+
+    // Optionally, update the client record to reflect the project (if you want to keep a reference)
+    // await db.execute('UPDATE clients SET project = ? WHERE id = ?', [projectId, clientId]);
+
+    res.json({ success: true, clientId, projectId });
+    const assigner = req.user ? req.user.username : 'System';
+    logActivity('client', `Project #${projectId} assigned to Client #${clientId} by ${assigner}`, { clientId, projectId, assigner });
+  } catch (error) {
+    console.error('Error assigning project to client:', error);
+    res.status(500).json({ message: 'Failed to assign project to client', error: error.message });
+  }
+};
 
 // Create a new client
 export const createClient = async (req, res) => {
   try {
-    const { name, initials, project, status, lastMessage, unread, phone, email } = req.body;
+    const { name, initials, project, status, lastMessage, unread, phone, email, type, sendOnboarding } = req.body;
+    // Derive initials if not provided (though frontend usually does)
+    // We expect 'type' to be passed from frontend
     const [result] = await db.execute(
-      `INSERT INTO clients (name, initials, project, status, lastMessage, unread, phone, email)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, initials, project, status, lastMessage, unread, phone, email]
+      `INSERT INTO clients (name, initials, project, status, lastMessage, unread, phone, email, type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        name,
+        initials || null,
+        project || null,
+        status || 'Onboarded',
+        lastMessage || '',
+        unread || 0,
+        phone || null,
+        email || null,
+        type || 'p3l'
+      ]
     );
+
+    // Send Onboarding Email if requested
+    if (sendOnboarding && email) {
+      // Run asynchronously, don't block response
+      sendOnboardingEmail(name, email).catch(err => console.error("Async email error:", err));
+    }
+
+    const creator = req.user ? req.user.username : 'Admin';
+    logActivity('client', `New client "${name}" added by ${creator}`, { clientId: result.insertId, email, creator });
+
     res.status(201).json({ id: result.insertId, ...req.body });
   } catch (error) {
     console.error('Error creating client:', error);
@@ -78,7 +132,9 @@ export const updateClientById = async (req, res) => {
     if (lastMessage !== undefined) { fields.push('lastMessage = ?'); params.push(lastMessage); }
     if (unread !== undefined) { fields.push('unread = ?'); params.push(unread); }
     if (phone !== undefined) { fields.push('phone = ?'); params.push(phone); }
+    if (phone !== undefined) { fields.push('phone = ?'); params.push(phone); }
     if (email !== undefined) { fields.push('email = ?'); params.push(email); }
+    if (req.body.type !== undefined) { fields.push('type = ?'); params.push(req.body.type); }
     if (fields.length === 0) return res.status(400).json({ message: 'No fields to update' });
     params.push(id);
     const [result] = await db.execute(`UPDATE clients SET ${fields.join(', ')} WHERE id = ?`, params);

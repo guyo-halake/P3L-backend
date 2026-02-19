@@ -12,6 +12,7 @@ import { setIO } from './socket.js';
 import authRoutes from './routes/auth.js';
 import projectRoutes from './routes/projects.js';
 import clientRoutes from './routes/clients.js';
+import serviceRoutes from './routes/services.js';
 import emailRoutes from './routes/email.js';
 import userSettingsRoutes from './routes/userSettings.js';
 import githubRoutes from './routes/github.js';
@@ -22,12 +23,40 @@ import activityRoutes from './routes/activity.js';
 import schoolsRoutes from './routes/schools.js';
 import tryhackmeRoutes from './routes/tryhackme.js';
 import notionRoutes from './routes/notionRoutes.js';
+import notificationRoutes from './routes/notifications.js';
+import inviteRoutes from './routes/invites.js';
 // import mockRoutes from './routes/mock.js'; // Only enable in development
+import { checkEmailReplies } from './services/emailListener.js';
+import lecturerRoutes from './routes/lecturers.js';
+import classroomRoutes from './routes/classrooms.js';
+import classTimeRoutes from './routes/classTimes.js';
+import examRoutes from './routes/exams.js';
+import documentRoutes from './routes/documents.js';
+import attendanceRoutes from './routes/attendance.js';
+import { saveMessage } from './controllers/messageController.js';
+import clientsProjectRoutes from './routes/clientsProjects.js';
+import { authenticateToken } from './middleware/auth.js';
+import { getActivity, createActivity } from './controllers/activityController.js';
+import { getSystemActivity } from './controllers/systemActivityController.js';
 
 dotenv.config();
 
 // Debug: Print DB config values
 console.log('DB config:', process.env.DB_HOST, process.env.DB_USER, process.env.DB_NAME);
+
+// ... (lines 30-46) ...
+
+// Start email listener loop (every 5 minutes)
+const EMAIL_CHECK_INTERVAL = 5 * 60 * 1000;
+setInterval(() => {
+  checkEmailReplies().catch(err => console.error('Email check failed:', err));
+}, EMAIL_CHECK_INTERVAL);
+
+// Initial check on startup (delayed slightly to allow DB connection)
+setTimeout(() => {
+  checkEmailReplies().catch(err => console.error('Initial email check failed:', err));
+}, 5000);
+
 
 const app = express();
 // Resolve project paths for static serving in production
@@ -46,6 +75,7 @@ setIO(io);
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 import expressSession from 'express-session';
 
@@ -65,16 +95,46 @@ app.use('/api/user-settings', userSettingsRoutes);
 app.use('/api/github', githubRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/clients', clientRoutes);
+app.use('/api/services', serviceRoutes);
 app.use('/api/activity', activityRoutes);
+app.get('/api/activity', authenticateToken, getActivity);
+app.post('/api/activity', authenticateToken, createActivity);
+app.get('/api/system-activity', authenticateToken, getSystemActivity);
+
+// Fees Routes
 app.use('/api/messages', (req, res, next) => {
   // console.log removed for production
   next();
 }, messageRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/schools', schoolsRoutes);
+import assignmentsRoutes from './routes/assignments.js';
+import usersRoutes from './routes/users.js';
+app.use('/api/users', usersRoutes);
+app.use('/api/assignments', assignmentsRoutes);
+import labsRoutes from './routes/labs.js';
+app.use('/api/labs', labsRoutes);
+import feesRoutes from './routes/fees.js';
+app.use('/api/fees', feesRoutes);
+import reportsRoutes from './routes/reports.js';
+app.use('/api/reports', reportsRoutes);
+import unitsRoutes from './routes/units.js';
+app.use('/api/units', unitsRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/notion', notionRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/invitations', inviteRoutes);
+app.use('/api/lecturers', lecturerRoutes);
+app.use('/api/classrooms', classroomRoutes);
+app.use('/api/class-times', classTimeRoutes);
+app.use('/api/exams', examRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/clients-projects', clientsProjectRoutes);
+
+import invoiceRoutes from './routes/invoices.js';
+app.use('/api/invoices', invoiceRoutes);
 // Only enable mock routes in development
 let mockRoutes;
 if (process.env.NODE_ENV === 'development') {
@@ -107,19 +167,32 @@ io.on('connection', (socket) => {
 
   // Listen for user identification
   socket.on('user_online', (userId) => {
-    onlineUsers.set(userId, socket.id);
+    // console.log(`User ${userId} came online (socket ${socket.id})`);
+    onlineUsers.set(Number(userId), socket.id); // Ensure userId is number
     io.emit('online_users', Array.from(onlineUsers.keys()));
   });
 
+  // ... (inside socket connection)
 
-  socket.on('send_message', (data) => {
+  socket.on('send_message', async (data) => {
     // data: { to, from, message, timestamp, groupId }
+    // console.log('Socket received message:', data);
+
+    // FIX: Do NOT save message here. The frontend calls the API endpoint to save it.
+    // Saving here causes duplicates.
+    /*
+    try {
+      await saveMessage({ ... });
+    } catch (err) { ... }
+    */
+
     if (data.groupId) {
       // Group message: broadcast to the group room
       io.to(`group_${data.groupId}`).emit('receive_message', data);
     } else {
       // Private message
-      const targetSocketId = onlineUsers.get(data.to);
+      const targetSocketId = onlineUsers.get(Number(data.to));
+      // console.log(`Routing private message to user ${data.to} (socket ${targetSocketId})`);
       if (targetSocketId) {
         io.to(targetSocketId).emit('receive_message', data);
       }
