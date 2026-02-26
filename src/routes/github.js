@@ -1,7 +1,10 @@
 import express from 'express';
 import fetch from 'node-fetch';
-import { getPersonalGitHubRepos, getAllGitHubRepos, githubLogin, githubCallback, getRepoReadme, getRepoBranches, getRepoCommits, getRepoPulls, getRepoIssues, mergePullRequest, createBranch, createPullRequest, createIssue, updateIssue, getGithubMe, getRepoLatestWorkflowRun, addRepoCollaborator, getRepoLanguages, getRepoReleases, getRepoCollaborators, getRepoWorkflows, getRepoWorkflowRuns, getRepoContents, getRepoFileContent } from '../controllers/githubController.js';
+import { getPersonalGitHubRepos, getAllGitHubRepos, githubLogin, githubCallback, getRepoReadme, getRepoBranches, getRepoCommits, getRepoPulls, getRepoIssues, mergePullRequest, createBranch, createPullRequest, createIssue, updateIssue, getGithubMe, getRepoLatestWorkflowRun, addRepoCollaborator, getRepoLanguages, getRepoReleases, getRepoCollaborators, getRepoWorkflows, getRepoWorkflowRuns, getRepoContents, getRepoFileContent, getGithubActivity } from '../controllers/githubController.js';
 const router = express.Router();
+
+// GET /api/github/activity
+router.get('/activity', getGithubActivity);
 
 // GET /api/github/personal-repos?user_id=1
 router.get('/personal-repos', getPersonalGitHubRepos);

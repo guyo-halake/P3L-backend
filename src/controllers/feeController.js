@@ -1,4 +1,5 @@
 import db from '../config/db.js';
+import { getIO } from '../socket.js';
 
 // Get all fees
 export const getFees = async (req, res) => {
@@ -29,6 +30,8 @@ export const addFee = async (req, res) => {
       'INSERT INTO school_fees (school_id, date, description, amount, status, payment_method, receipt_url) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [school_id, date, description, amount, status || 'Pending', payment_method, receipt_url]
     );
+    const io = getIO();
+    io && io.emit('fee_added', { id: result.insertId, school_id, date, description, amount, status, payment_method, receipt_url });
     res.status(201).json({ id: result.insertId });
   } catch (err) {
     res.status(500).json({ error: 'Failed to add fee' });
@@ -43,6 +46,8 @@ export const updateFee = async (req, res) => {
       'UPDATE school_fees SET school_id=?, date=?, description=?, amount=?, status=?, payment_method=?, receipt_url=? WHERE id=?',
       [school_id, date, description, amount, status, payment_method, receipt_url, req.params.id]
     );
+    const io = getIO();
+    io && io.emit('fee_updated', { id: req.params.id, school_id, date, description, amount, status, payment_method, receipt_url });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update fee' });
@@ -53,6 +58,8 @@ export const updateFee = async (req, res) => {
 export const deleteFee = async (req, res) => {
   try {
     await db.query('DELETE FROM school_fees WHERE id = ?', [req.params.id]);
+    const io = getIO();
+    io && io.emit('fee_deleted', { id: req.params.id });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete fee' });

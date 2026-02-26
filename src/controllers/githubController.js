@@ -769,3 +769,37 @@ export const getRepoFileContent = async (req, res) => {
   }
 };
 
+// Fetch Recent GitHub Activity (Events)
+export const getGithubActivity = async (req, res) => {
+  try {
+    const { user_id } = req.query;
+    console.log(`[GitHub] Fetching activity for user_id: ${user_id}`);
+
+    const githubToken = await getGithubTokenForUser(user_id);
+    if (!githubToken) {
+      console.warn(`[GitHub] No token found for user_id: ${user_id}`);
+      return res.status(403).json({ message: 'GitHub token required' });
+    }
+
+    // 1. Get username
+    const userRes = await axios.get('https://api.github.com/user', {
+      headers: { Authorization: `token ${githubToken}`, 'User-Agent': 'P3L-App' }
+    });
+    const username = userRes.data.login;
+    console.log(`[GitHub] Username found: ${username}`);
+
+    // 2. Get events
+    const eventsRes = await axios.get(`https://api.github.com/users/${username}/events`, {
+      headers: { Authorization: `token ${githubToken}`, 'User-Agent': 'P3L-App' },
+      params: { per_page: 20 }
+    });
+
+    console.log(`[GitHub] Found ${eventsRes.data.length} events for ${username}`);
+    res.json(eventsRes.data);
+  } catch (error) {
+    console.error(`[GitHub] Error in getGithubActivity:`, error.response?.data || error.message);
+    const status = error.response?.status || 500;
+    res.status(status).json({ message: 'Failed to fetch GitHub activity', error: error.message });
+  }
+};
+

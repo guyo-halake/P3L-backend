@@ -7,5 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   avatar VARCHAR(255),
   github_token VARCHAR(255),
   user_type ENUM('full_admin', 'dev') NOT NULL DEFAULT 'dev',
+  wallet_balance DECIMAL(12, 2) DEFAULT 0.00,
+  must_change_password TINYINT(1) DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

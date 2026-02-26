@@ -38,6 +38,8 @@ import clientsProjectRoutes from './routes/clientsProjects.js';
 import { authenticateToken } from './middleware/auth.js';
 import { getActivity, createActivity } from './controllers/activityController.js';
 import { getSystemActivity } from './controllers/systemActivityController.js';
+import vercelRoutes from './routes/vercel.js';
+import smsRoutes from './routes/sms.js';
 
 dotenv.config();
 
@@ -135,6 +137,14 @@ app.use('/api/clients-projects', clientsProjectRoutes);
 
 import invoiceRoutes from './routes/invoices.js';
 app.use('/api/invoices', invoiceRoutes);
+app.use('/api/vercel', vercelRoutes);
+app.use('/api/sms', smsRoutes);
+
+import activitiesRoutes from './routes/activities.js';
+app.use('/api/activities', activitiesRoutes);
+
+import schoolDocumentRoutes from './routes/schoolDocuments.js';
+app.use('/api/school-documents', schoolDocumentRoutes);
 // Only enable mock routes in development
 let mockRoutes;
 if (process.env.NODE_ENV === 'development') {

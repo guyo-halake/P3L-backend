@@ -206,3 +206,68 @@ Error: Data too long for column 'file_url' at row 1
     at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
     at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
 
+2026-02-26T07:42:32.013Z - Cannot add or update a child row: a foreign key constraint fails (`railway`.`messages`, CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`to_user`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+Error: Cannot add or update a child row: a foreign key constraint fails (`railway`.`messages`, CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`to_user`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:9:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:53:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-26T08:58:40.391Z - Cannot add or update a child row: a foreign key constraint fails (`railway`.`messages`, CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`to_user`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+Error: Cannot add or update a child row: a foreign key constraint fails (`railway`.`messages`, CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`to_user`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:9:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:53:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-26T09:24:48.283Z - Cannot add or update a child row: a foreign key constraint fails (`railway`.`messages`, CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`to_user`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+Error: Cannot add or update a child row: a foreign key constraint fails (`railway`.`messages`, CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`to_user`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:9:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:53:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-26T09:25:01.528Z - Cannot add or update a child row: a foreign key constraint fails (`railway`.`messages`, CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`to_user`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+Error: Cannot add or update a child row: a foreign key constraint fails (`railway`.`messages`, CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`to_user`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:9:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:53:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+
+2026-02-26T09:27:07.240Z - Cannot add or update a child row: a foreign key constraint fails (`railway`.`messages`, CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`to_user`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+Error: Cannot add or update a child row: a foreign key constraint fails (`railway`.`messages`, CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`to_user`) REFERENCES `users` (`id`) ON DELETE CASCADE)
+    at PromisePool.execute (C:\P3L Projects\p3l-workspace-88\backend\node_modules\mysql2\lib\promise\pool.js:54:22)
+    at saveMessage (file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/controllers/messageController.js:9:31)
+    at file:///C:/P3L%20Projects/p3l-workspace-88/backend/src/routes/messages.js:53:22
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:149:13)
+    at Route.dispatch (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\route.js:119:3)
+    at Layer.handle [as handle_request] (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\layer.js:95:5)
+    at C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:284:15
+    at router.process_params (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\P3L Projects\p3l-workspace-88\backend\node_modules\express\lib\router\index.js:280:10)
+

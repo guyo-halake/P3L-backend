@@ -9,5 +9,6 @@ CREATE TABLE IF NOT EXISTS clients (
     unread INT DEFAULT 0,
     phone VARCHAR(20),
     email VARCHAR(255),
+    type VARCHAR(50) DEFAULT 'p3l',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
