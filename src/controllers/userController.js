@@ -4,7 +4,7 @@ import db from '../config/db.js';
 export const getUsers = async (req, res) => {
     try {
         const { type } = req.query;
-        let query = 'SELECT id, username, email, user_type, wallet_balance FROM users';
+        let query = 'SELECT id, username, email, user_type, wallet_balance, permissions FROM users';
         const params = [];
 
         if (type) {
@@ -29,5 +29,17 @@ export const updateWalletBalance = async (req, res) => {
     } catch (error) {
         console.error('Error updating wallet:', error);
         res.status(500).json({ message: 'Wallet update failed' });
+    }
+};
+
+export const updatePermissions = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { permissions } = req.body;
+        await db.execute('UPDATE users SET permissions = ? WHERE id = ?', [JSON.stringify(permissions), id]);
+        res.json({ success: true, permissions });
+    } catch (error) {
+        console.error('Error updating permissions:', error);
+        res.status(500).json({ message: 'Permissions update failed' });
     }
 };

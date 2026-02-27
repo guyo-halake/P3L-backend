@@ -140,6 +140,9 @@ app.use('/api/invoices', invoiceRoutes);
 app.use('/api/vercel', vercelRoutes);
 app.use('/api/sms', smsRoutes);
 
+import businessRoutes from './routes/business.js';
+app.use('/api/business', businessRoutes);
+
 import activitiesRoutes from './routes/activities.js';
 app.use('/api/activities', activitiesRoutes);
 
