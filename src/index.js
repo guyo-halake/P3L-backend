@@ -40,6 +40,8 @@ import { getActivity, createActivity } from './controllers/activityController.js
 import { getSystemActivity } from './controllers/systemActivityController.js';
 import vercelRoutes from './routes/vercel.js';
 import smsRoutes from './routes/sms.js';
+import potentialClientRoutes from './routes/potentialClients.js';
+import p3lTesterRoutes from './routes/p3lTesters.js';
 
 dotenv.config();
 
@@ -98,6 +100,8 @@ app.use('/api/github', githubRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/services', serviceRoutes);
+app.use('/api/potential-clients', potentialClientRoutes);
+app.use('/api/p3l-testers', p3lTesterRoutes);
 app.use('/api/activity', activityRoutes);
 app.get('/api/activity', authenticateToken, getActivity);
 app.post('/api/activity', authenticateToken, createActivity);
@@ -133,7 +137,7 @@ app.use('/api/class-times', classTimeRoutes);
 app.use('/api/exams', examRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/attendance', attendanceRoutes);
-app.use('/api/clients-projects', clientsProjectRoutes);
+app.use('/api/projects-clients', clientsProjectRoutes);
 
 import invoiceRoutes from './routes/invoices.js';
 app.use('/api/invoices', invoiceRoutes);

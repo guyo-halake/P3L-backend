@@ -61,6 +61,11 @@ export const getGitHubRepoActivity = async (req, res) => {
       commitsGraph
     });
   } catch (error) {
+    if (error.response && error.response.status === 409) {
+      // Empty Git repository
+      return res.json({ commits: [], branches: [], latestCommit: null, commitsGraph: [] });
+    }
+
     console.error('Error fetching GitHub repo activity:', error);
     if (error.response) {
       return res.status(500).json({
@@ -391,13 +396,11 @@ export const assignProject = async (req, res) => {
       );
     } catch (e) { console.error('Failed to create notification', e); }
 
-    res.json({ success: true, message: 'Project assigned successfully' });
-
-    res.json({ success: true, message: 'Project assigned successfully' });
-
     // Log Activity
     const assignerName = req.user ? req.user.username : 'System';
     logActivity('project', `Project #${id} assigned to User #${user_id} by ${assignerName}`, { projectId: id, assigneeId: user_id, assigner: assignerName });
+
+    res.json({ success: true, message: 'Project assigned successfully' });
   } catch (error) {
     console.error('Error assigning project:', error);
     res.status(500).json({ error: 'Failed to assign project' });
