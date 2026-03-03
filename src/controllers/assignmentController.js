@@ -1,4 +1,5 @@
 import db from '../config/db.js';
+import { getIO } from '../socket.js';
 
 // Get all assignments
 export const getAssignments = async (req, res) => {
@@ -34,6 +35,8 @@ export const addAssignment = async (req, res) => {
       'INSERT INTO school_assignments (unit_id, title, due_date, status, description) VALUES (?, ?, ?, ?, ?)',
       [unit_id, title, due_date, status || 'Pending', description]
     );
+    const io = getIO();
+    io && io.emit('academic_assignment_added', { id: result.insertId, unit_id, title, due_date, status, description });
     res.status(201).json({ id: result.insertId });
   } catch (err) {
     res.status(500).json({ error: 'Failed to add assignment' });
@@ -48,6 +51,8 @@ export const updateAssignment = async (req, res) => {
       'UPDATE school_assignments SET unit_id=?, title=?, due_date=?, status=?, description=? WHERE id=?',
       [unit_id, title, due_date, status, description, req.params.id]
     );
+    const io = getIO();
+    io && io.emit('academic_assignment_updated', { id: req.params.id, unit_id, title, due_date, status, description });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update assignment' });
@@ -58,6 +63,8 @@ export const updateAssignment = async (req, res) => {
 export const deleteAssignment = async (req, res) => {
   try {
     await db.query('DELETE FROM school_assignments WHERE id = ?', [req.params.id]);
+    const io = getIO();
+    io && io.emit('academic_assignment_deleted', { id: req.params.id });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete assignment' });

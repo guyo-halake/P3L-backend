@@ -132,7 +132,6 @@ export const updateClientById = async (req, res) => {
     if (lastMessage !== undefined) { fields.push('lastMessage = ?'); params.push(lastMessage); }
     if (unread !== undefined) { fields.push('unread = ?'); params.push(unread); }
     if (phone !== undefined) { fields.push('phone = ?'); params.push(phone); }
-    if (phone !== undefined) { fields.push('phone = ?'); params.push(phone); }
     if (email !== undefined) { fields.push('email = ?'); params.push(email); }
     if (req.body.type !== undefined) { fields.push('type = ?'); params.push(req.body.type); }
     if (fields.length === 0) return res.status(400).json({ message: 'No fields to update' });

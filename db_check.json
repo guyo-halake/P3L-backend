@@ -1,0 +1,81 @@
+{
+  "clients_projects": [
+    {
+      "id": 2,
+      "project_name": "POA (P3L OPERATING APP)",
+      "client_name": "Razak Wako",
+      "description": "web ap",
+      "github_repos": [
+        {
+          "url": "https://github.com/guyo-halake/P3L-frontend",
+          "category": "Frontend"
+        },
+        {
+          "url": "https://github.com/guyo-halake/P3L-backend",
+          "category": "Backend"
+        }
+      ],
+      "vercel_url": "https://undefined",
+      "deadline": "2026-02-04T21:00:00.000Z",
+      "budget": null,
+      "dev_assigned_id": 20,
+      "status": "pending",
+      "created_at": "2026-02-19T06:30:16.000Z",
+      "project_type": "Web App"
+    }
+  ],
+  "clients": [
+    {
+      "id": 5,
+      "name": "Guyo Halake",
+      "initials": "GH",
+      "project": "Matta ISP",
+      "status": "awaiting",
+      "lastMessage": "Welcome to P3L",
+      "unread": 0,
+      "phone": "768141129",
+      "email": "guyohalakr@gmail.com",
+      "created_at": "2026-02-03T03:15:47.000Z",
+      "type": "p3l"
+    },
+    {
+      "id": 6,
+      "name": "Razak Wako",
+      "initials": "RW",
+      "project": "Matta ISP",
+      "status": "Onboarded",
+      "lastMessage": "New client joined",
+      "unread": 0,
+      "phone": "+254768141129",
+      "email": "razakwako45@gmail.com",
+      "created_at": "2026-02-16T09:52:33.000Z",
+      "type": "p3l"
+    },
+    {
+      "id": 7,
+      "name": "Sarah Rashid",
+      "initials": "SR",
+      "project": "Sayara Aesthetics",
+      "status": "Project in Progress",
+      "lastMessage": "New client joined",
+      "unread": 0,
+      "phone": "+254 7---------",
+      "email": "sayaraaesths@gmail.com",
+      "created_at": "2026-02-19T03:58:56.000Z",
+      "type": "p3l"
+    },
+    {
+      "id": 8,
+      "name": "Razak Wako",
+      "initials": null,
+      "project": "POA (P3L OPERATING APP)",
+      "status": "Onboarded",
+      "lastMessage": "",
+      "unread": 0,
+      "phone": null,
+      "email": null,
+      "created_at": "2026-02-19T06:30:31.000Z",
+      "type": "p3l"
+    }
+  ]
+}

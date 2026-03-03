@@ -61,6 +61,11 @@ export const getGitHubRepoActivity = async (req, res) => {
       commitsGraph
     });
   } catch (error) {
+    if (error.response && error.response.status === 409) {
+      // Empty Git repository
+      return res.json({ commits: [], branches: [], latestCommit: null, commitsGraph: [] });
+    }
+
     console.error('Error fetching GitHub repo activity:', error);
     if (error.response) {
       return res.status(500).json({
@@ -391,13 +396,11 @@ export const assignProject = async (req, res) => {
       );
     } catch (e) { console.error('Failed to create notification', e); }
 
-    res.json({ success: true, message: 'Project assigned successfully' });
-
-    res.json({ success: true, message: 'Project assigned successfully' });
-
     // Log Activity
     const assignerName = req.user ? req.user.username : 'System';
     logActivity('project', `Project #${id} assigned to User #${user_id} by ${assignerName}`, { projectId: id, assigneeId: user_id, assigner: assignerName });
+
+    res.json({ success: true, message: 'Project assigned successfully' });
   } catch (error) {
     console.error('Error assigning project:', error);
     res.status(500).json({ error: 'Failed to assign project' });
@@ -432,5 +435,42 @@ export const shareProject = async (req, res) => {
   } catch (error) {
     console.error('Error sharing project:', error);
     res.status(500).json({ error: 'Failed to share project' });
+  }
+};
+
+export const getProjectTasks = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.execute(
+      "SELECT pt.*, u.username as assignee_name FROM project_tasks pt LEFT JOIN users u ON pt.user_id = u.id WHERE pt.project_id = ? ORDER BY pt.created_at DESC",
+      [id]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error("Error fetching project tasks:", error);
+    res.status(500).json({ message: "Failed to fetch tasks" });
+  }
+};
+
+export const createProjectTask = async (req, res) => {
+  try {
+    const { project_id, user_id, title, description, priority, due_date } = req.body;
+    const [result] = await db.execute(
+      "INSERT INTO project_tasks (project_id, user_id, title, description, priority, due_date) VALUES (?, ?, ?, ?, ?, ?)",
+      [project_id, user_id, title, description, priority || "Medium", due_date]
+    );
+
+    // Email Notification Mock
+    if (user_id) {
+      const [userRows] = await db.execute("SELECT email, username FROM users WHERE id = ?", [user_id]);
+      if (userRows.length) {
+        console.log(`[EMAIL NOTIFICATION] Sending to ${userRows[0].email}: New Task Assigned: ${title}`);
+      }
+    }
+
+    res.json({ id: result.insertId, ...req.body });
+  } catch (error) {
+    console.error("Error creating project task:", error);
+    res.status(500).json({ message: "Failed to create task" });
   }
 };

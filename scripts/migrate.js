@@ -20,26 +20,42 @@ async function run() {
     user: DB_USER,
     password: DB_PASSWORD,
     database: DB_NAME,
+    port: process.env.DB_PORT || 3306,
     multipleStatements: true,
   });
   const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+
+  // Order matters: base tables first, then dependent tables
   const files = [
-    path.join(root, 'p3l_system_db_schema.sql'),
+    // --- Core tables (no FK dependencies) ---
     path.join(root, 'src', 'models', 'users.sql'),
     path.join(root, 'src', 'models', 'clients.sql'),
     path.join(root, 'src', 'models', 'projects.sql'),
-    path.join(root, 'src', 'models', 'messages.sql'),
-    path.join(root, 'src', 'models', 'invites.sql'),
     path.join(root, 'src', 'models', 'schools.sql'),
+    // --- Tables depending on core tables ---
+    path.join(root, 'src', 'models', 'groups.sql'),           // depends on users
+    path.join(root, 'src', 'models', 'messages.sql'),          // depends on users
+    path.join(root, 'src', 'models', 'message_reactions.sql'), // depends on messages, users
+    path.join(root, 'src', 'models', 'invites.sql'),
+    path.join(root, 'src', 'models', 'notifications.sql'),     // depends on users
+    path.join(root, 'src', 'models', 'services.sql'),          // depends on projects
+    path.join(root, 'src', 'models', 'invoices.sql'),          // depends on clients
+    path.join(root, 'src', 'models', 'system_activities.sql'),
+    path.join(root, 'src', 'models', 'clients_projects.sql'),  // depends on users
+    path.join(root, 'src', 'models', 'sent_messages.sql'),
   ];
+
   try {
     for (const f of files) {
       const sql = readSql(f);
-      if (!sql) continue;
+      if (!sql) {
+        console.warn('Skipped (not found):', path.basename(f));
+        continue;
+      }
       console.log('Applying:', path.basename(f));
       await conn.query(sql);
     }
-    console.log('Migration completed');
+    console.log('Migration completed successfully');
     await conn.end();
     process.exit(0);
   } catch (err) {

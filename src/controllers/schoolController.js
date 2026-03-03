@@ -26,16 +26,16 @@ export const getSchoolById = async (req, res) => {
 // Add a new school
 export const addSchool = async (req, res) => {
   try {
-    const { name, logo_url, website_url, portal_url, student_email, student_number, phone, status } = req.body;
+    const { name, type, platform, platform_username, logo_url, website_url, portal_url, student_email, student_number, phone, status } = req.body;
     const [result] = await db.query(
-      'INSERT INTO schools (name, logo_url, website_url, portal_url, student_email, student_number, phone, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, logo_url, website_url, portal_url, student_email, student_number, phone, status || 'Active']
+      'INSERT INTO schools (name, type, platform, platform_username, logo_url, website_url, portal_url, student_email, student_number, phone, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, type || 'physical', platform, platform_username, logo_url, website_url, portal_url, student_email, student_number, phone, status || 'Active']
     );
-    // Emit real-time event
     const io = getIO();
-    io && io.emit('school_added', { id: result.insertId, name, logo_url, website_url, portal_url, student_email, student_number, phone, status: status || 'Active' });
+    io && io.emit('school_added', { id: result.insertId, name, type, platform, platform_username, logo_url, website_url, portal_url, student_email, student_number, phone, status: status || 'Active' });
     res.status(201).json({ id: result.insertId });
   } catch (err) {
+    console.error('Failed to add school:', err);
     res.status(500).json({ error: 'Failed to add school' });
   }
 };
@@ -43,14 +43,13 @@ export const addSchool = async (req, res) => {
 // Update a school
 export const updateSchool = async (req, res) => {
   try {
-    const { name, logo_url, website_url, portal_url, student_email, student_number, phone, status } = req.body;
+    const { name, type, platform, platform_username, logo_url, website_url, portal_url, student_email, student_number, phone, status } = req.body;
     await db.query(
-      'UPDATE schools SET name=?, logo_url=?, website_url=?, portal_url=?, student_email=?, student_number=?, phone=?, status=? WHERE id=?',
-      [name, logo_url, website_url, portal_url, student_email, student_number, phone, status, req.params.id]
+      'UPDATE schools SET name=?, type=?, platform=?, platform_username=?, logo_url=?, website_url=?, portal_url=?, student_email=?, student_number=?, phone=?, status=? WHERE id=?',
+      [name, type, platform, platform_username, logo_url, website_url, portal_url, student_email, student_number, phone, status, req.params.id]
     );
-    // Emit real-time event
     const io = getIO();
-    io && io.emit('school_updated', { id: req.params.id, name, logo_url, website_url, portal_url, student_email, student_number, phone, status });
+    io && io.emit('school_updated', { id: req.params.id, name, type, platform, platform_username, logo_url, website_url, portal_url, student_email, student_number, phone, status });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update school' });
@@ -61,7 +60,6 @@ export const updateSchool = async (req, res) => {
 export const deleteSchool = async (req, res) => {
   try {
     await db.query('DELETE FROM schools WHERE id = ?', [req.params.id]);
-    // Emit real-time event
     const io = getIO();
     io && io.emit('school_deleted', { id: req.params.id });
     res.json({ success: true });

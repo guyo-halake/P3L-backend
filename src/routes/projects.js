@@ -1,7 +1,13 @@
 import { Router } from 'express';
-import { getGitHubRepoActivity, createProject, getProjects, saveVercelProject, getVercelProjects, getVercelDeployments, getVercelDeploymentEvents, deleteProject, updateProject, assignProject, shareProject } from '../controllers/projectController.js';
+import {
+	getGitHubRepoActivity, createProject, getProjects, saveVercelProject,
+	getVercelProjects, getVercelDeployments, getVercelDeploymentEvents,
+	deleteProject, updateProject, assignProject, shareProject,
+	getProjectTasks, createProjectTask
+} from '../controllers/projectController.js';
 
 const router = Router();
+
 // BULK DELETE projects
 router.post('/bulk-delete', async (req, res) => {
 	const { ids } = req.body;
@@ -14,34 +20,39 @@ router.post('/bulk-delete', async (req, res) => {
 		res.status(500).json({ message: 'Bulk delete failed', error: error.message });
 	}
 });
-// GET /api/projects/github-activity?owner=OWNER&repo=REPO - fetch commit and branch data for a GitHub repo
+
+// GET /api/projects/github-activity?owner=OWNER&repo=REPO
 router.get('/github-activity', getGitHubRepoActivity);
-// GET /api/projects/vercel-projects - fetch all Vercel projects from Vercel API
+// GET /api/projects/vercel-projects
 router.get('/vercel-projects', getVercelProjects);
-// GET /api/projects/vercel-deployments?project=NAME - fetch deployments for a Vercel project
+// GET /api/projects/vercel-deployments?project=NAME
 router.get('/vercel-deployments', getVercelDeployments);
-// GET /api/projects/vercel-deployment-events?deploymentId=ID - fetch deployment events/logs
+// GET /api/projects/vercel-deployment-events?deploymentId=ID
 router.get('/vercel-deployment-events', getVercelDeploymentEvents);
 
-// POST /api/projects/vercel - save a Vercel project
+// POST /api/projects/vercel
 router.post('/vercel', saveVercelProject);
 
-// POST /api/projects - create a new project
+// POST /api/projects
 router.post('/', createProject);
 
-// GET /api/projects - get all projects
+// GET /api/projects
 router.get('/', getProjects);
 
-// DELETE /api/projects/:id - delete a project
+// DELETE /api/projects/:id
 router.delete('/:id', deleteProject);
 
-// PUT /api/projects/:id - update a project
+// PUT /api/projects/:id
 router.put('/:id', updateProject);
 
-// POST /api/projects/:id/assign - assign project to user
+// POST /api/projects/:id/assign
 router.post('/:id/assign', assignProject);
 
-// POST /api/projects/:id/share - share project via email
+// POST /api/projects/:id/share
 router.post('/:id/share', shareProject);
+
+// Tasks
+router.get('/:id/tasks', getProjectTasks);
+router.post('/tasks', createProjectTask);
 
 export default router;

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { createClient, getClients, getClientById, updateClientById, assignProjectToClient } from '../controllers/clientController.js';
+import db from '../config/db.js';
 
 const router = Router();
 // BULK DELETE clients
@@ -8,7 +9,7 @@ router.post('/bulk-delete', async (req, res) => {
 	if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: 'No client ids provided' });
 	try {
 		const placeholders = ids.map(() => '?').join(',');
-		const [result] = await req.app.get('db').execute(`DELETE FROM clients WHERE id IN (${placeholders})`, ids);
+		const [result] = await db.execute(`DELETE FROM clients WHERE id IN (${placeholders})`, ids);
 		res.json({ success: true, deleted: result.affectedRows });
 	} catch (error) {
 		res.status(500).json({ message: 'Bulk delete failed', error: error.message });

@@ -1,4 +1,5 @@
 import db from '../config/db.js';
+import { getIO } from '../socket.js';
 
 // Get all exams
 export const getExams = async (req, res) => {
@@ -29,6 +30,8 @@ export const addExam = async (req, res) => {
       'INSERT INTO exams (unit_id, school_id, date, start_time, end_time, type, venue) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [unit_id, school_id, date, start_time, end_time, type, venue]
     );
+    const io = getIO();
+    io && io.emit('exam_added', { id: result.insertId, unit_id, school_id, date, start_time, end_time, type, venue });
     res.status(201).json({ id: result.insertId });
   } catch (err) {
     res.status(500).json({ error: 'Failed to add exam' });
@@ -43,6 +46,8 @@ export const updateExam = async (req, res) => {
       'UPDATE exams SET unit_id=?, school_id=?, date=?, start_time=?, end_time=?, type=?, venue=? WHERE id=?',
       [unit_id, school_id, date, start_time, end_time, type, venue, req.params.id]
     );
+    const io = getIO();
+    io && io.emit('exam_updated', { id: req.params.id, unit_id, school_id, date, start_time, end_time, type, venue });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update exam' });
@@ -53,6 +58,8 @@ export const updateExam = async (req, res) => {
 export const deleteExam = async (req, res) => {
   try {
     await db.query('DELETE FROM exams WHERE id = ?', [req.params.id]);
+    const io = getIO();
+    io && io.emit('exam_deleted', { id: req.params.id });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete exam' });
