@@ -42,6 +42,7 @@ import vercelRoutes from './routes/vercel.js';
 import smsRoutes from './routes/sms.js';
 import potentialClientRoutes from './routes/potentialClients.js';
 import p3lTesterRoutes from './routes/p3lTesters.js';
+import ssoRoutes from './routes/sso.js';
 
 dotenv.config();
 
@@ -143,6 +144,7 @@ import invoiceRoutes from './routes/invoices.js';
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/vercel', vercelRoutes);
 app.use('/api/sms', smsRoutes);
+app.use('/api/sso', ssoRoutes);
 
 import businessRoutes from './routes/business.js';
 app.use('/api/business', businessRoutes);

@@ -77,3 +77,55 @@ export const sendOnboardingEmail = async (clientName, clientEmail) => {
     return { success: false, error };
   }
 };
+
+export const sendTesterInviteEmail = async (testerEmail, inviteLink, adminName) => {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("RESEND_API_KEY is missing. Email skipped.");
+    return { success: false, error: "Missing API Key" };
+  }
+
+  try {
+    const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: 'Inter', sans-serif; background-color: #18181b; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 40px auto; background-color: #09090b; border: 1px solid #3f3f46; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5); }
+            .header { background-color: #09090b; padding: 40px; text-align: center; border-bottom: 1px solid #27272a;}
+            .header h1 { color: #facc15; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.5px; }
+            .content { padding: 40px; color: #a1a1aa; font-size: 16px; line-height: 1.6; }
+            .button { display: inline-block; background-color: #facc15; color: #000; font-weight: 800; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-size: 14px; text-align: center; margin-top: 20px;}
+            .highlight { color: #fff; font-weight: 600; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Welcome to P3L Developers</h1>
+            </div>
+            <div class="content">
+              <p>You have been invited by <span class="highlight">${adminName || 'an Administrator'}</span> to the P3L OS as a Test user.</p>
+              <p>Click on the following link to complete your account creation and access your designated testing environments.</p>
+              
+              <div style="text-align: center;">
+                <a href="${inviteLink}" class="button">Complete Setup</a>
+              </div>
+            </div>
+          </div>
+        </body>
+        </html>
+        `;
+
+    const data = await resend.emails.send({
+      from: 'P3L Developers <onboarding@resend.dev>',
+      to: [testerEmail],
+      subject: 'Welcome to P3L Developers — Tester Invitation',
+      html: htmlContent
+    });
+    return { success: true, data };
+  } catch (error) {
+    console.error("Failed to send invite email:", error);
+    return { success: false, error };
+  }
+};
