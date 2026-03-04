@@ -6,7 +6,16 @@ dotenv.config();
 let connectionConfig;
 
 if (process.env.MYSQL_URL || process.env.DATABASE_URL) {
-  connectionConfig = process.env.MYSQL_URL || process.env.DATABASE_URL;
+  const connectionString = process.env.MYSQL_URL || process.env.DATABASE_URL;
+  connectionConfig = {
+    uri: connectionString,
+    ssl: {
+      rejectUnauthorized: false
+    },
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  };
 } else {
   connectionConfig = {
     host: process.env.DB_HOST,
@@ -14,6 +23,7 @@ if (process.env.MYSQL_URL || process.env.DATABASE_URL) {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     port: process.env.DB_PORT || 3306,
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
