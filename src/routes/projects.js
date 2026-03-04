@@ -3,7 +3,10 @@ import {
 	getGitHubRepoActivity, createProject, getProjects, saveVercelProject,
 	getVercelProjects, getVercelDeployments, getVercelDeploymentEvents,
 	deleteProject, updateProject, assignProject, shareProject,
-	getProjectTasks, createProjectTask
+	getProjectTasks, createProjectTask, updateProjectTask,
+	getTaskChecklist, addTaskChecklistItem, updateTaskChecklistItem, deleteTaskChecklistItem,
+	sendTaskReminder, getProjectActivity, getProjectMilestones, addProjectMilestone,
+	getProjectDocuments, getProjectInvoices
 } from '../controllers/projectController.js';
 
 const router = Router();
@@ -54,5 +57,17 @@ router.post('/:id/share', shareProject);
 // Tasks
 router.get('/:id/tasks', getProjectTasks);
 router.post('/tasks', createProjectTask);
+router.put('/tasks/:id', updateProjectTask);
+router.get('/tasks/:id/checklist', getTaskChecklist);
+router.post('/tasks/:id/checklist', addTaskChecklistItem);
+router.put('/tasks/checklist/:itemId', updateTaskChecklistItem);
+router.delete('/tasks/checklist/:itemId', deleteTaskChecklistItem);
+router.post('/tasks/:id/remind', sendTaskReminder);
+
+router.get('/:id/activity', getProjectActivity);
+router.get('/:id/milestones', getProjectMilestones);
+router.post('/:id/milestones', addProjectMilestone);
+router.get('/:id/documents', getProjectDocuments);
+router.get('/:id/invoices', getProjectInvoices);
 
 export default router;

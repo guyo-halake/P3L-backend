@@ -20,14 +20,28 @@ export const createTester = async (req, res) => {
     const { full_name, email, password, phone, project_id, status } = req.body;
     try {
         const hashedPassword = await bcrypt.hash(password || 'tester123', 10);
+
+        // Handle potential duplicate entries smoothly by doing an UPSERT or Check
+        const targetEmail = email || '';
+        const [existing] = await db.execute('SELECT id FROM p3l_testers WHERE email = ?', [targetEmail]);
+
+        if (existing.length > 0) {
+            // Update existing profile details and confirm onboard
+            await db.execute(
+                'UPDATE p3l_testers SET full_name = ?, password = ?, status = ? WHERE email = ?',
+                [full_name || '', hashedPassword, status || 'Pending', targetEmail]
+            );
+            return res.status(200).json({ id: existing[0].id, message: 'Tester updated and onboarded' });
+        }
+
         const [result] = await db.execute(
             'INSERT INTO p3l_testers (full_name, email, password, phone, project_id, status) VALUES (?, ?, ?, ?, ?, ?)',
-            [full_name, email, hashedPassword, phone, project_id || null, status || 'Pending']
+            [full_name || '', targetEmail, hashedPassword, phone || null, project_id || null, status || 'Pending']
         );
         res.status(201).json({ id: result.insertId, message: 'Tester created successfully' });
     } catch (error) {
         console.error('Error creating tester:', error);
-        res.status(500).json({ error: 'Failed to create tester' });
+        res.status(500).json({ error: 'Failed to create tester', message: error.message });
     }
 };
 
@@ -86,5 +100,27 @@ export const getTesterActivities = async (req, res) => {
     } catch (error) {
         console.error('Error fetching activities:', error);
         res.status(500).json({ error: 'Failed to fetch activities' });
+    }
+};
+
+import { sendTesterInviteEmail } from '../services/emailService.js';
+
+export const inviteTester = async (req, res) => {
+    const { email, link, adminName } = req.body;
+
+    if (!email || !link) {
+        return res.status(400).json({ error: 'Email and link are required' });
+    }
+
+    try {
+        const result = await sendTesterInviteEmail(email, link, adminName);
+        if (result.success) {
+            res.json({ message: 'Invitation sent successfully' });
+        } else {
+            res.status(500).json({ error: 'Failed to send invite email' });
+        }
+    } catch (error) {
+        console.error('Error sending tester invitation:', error);
+        res.status(500).json({ error: 'Server error sending invitation' });
     }
 };

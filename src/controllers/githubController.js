@@ -209,10 +209,12 @@ export const githubCallback = async (req, res) => {
 };
 // Helper: get GitHub token for a user
 async function getGithubTokenForUser(user_id) {
-  if (!user_id) return null;
-  const [rows] = await db.execute('SELECT github_token FROM users WHERE id = ?', [user_id]);
-  if (rows.length && rows[0].github_token) return rows[0].github_token;
-  return null;
+  if (user_id) {
+    const [rows] = await db.execute('SELECT github_token FROM users WHERE id = ?', [user_id]);
+    if (rows.length && rows[0].github_token) return rows[0].github_token;
+  }
+  // Fallback to global token if provided in environment
+  return process.env.GITHUB_TOKEN || null;
 }
 // Get all GitHub repos for the authenticated user (owner + member)
 export const getAllGitHubRepos = async (req, res) => {
@@ -223,9 +225,14 @@ export const getAllGitHubRepos = async (req, res) => {
   // If no session token, try to find it by user_id
   if (!githubToken && user_id) {
     const [rows] = await db.execute('SELECT github_token FROM users WHERE id = ?', [user_id]);
-    if (rows.length > 0) {
+    if (rows.length > 0 && rows[0].github_token) {
       githubToken = rows[0].github_token;
     }
+  }
+
+  // Final fallback to global environment token
+  if (!githubToken) {
+    githubToken = process.env.GITHUB_TOKEN;
   }
 
   if (!githubToken) {
@@ -235,7 +242,7 @@ export const getAllGitHubRepos = async (req, res) => {
 
   try {
     // Fetch all repos (owner + member)
-    const response = await axios.get('https://api.github.com/user/repos?type=all&sort=updated', {
+    const response = await axios.get('https://api.github.com/user/repos?type=all&sort=updated&per_page=100', {
       headers: {
         Authorization: `token ${githubToken}`,
         Accept: 'application/vnd.github+json',
@@ -353,6 +360,24 @@ export const getRepoPulls = async (req, res) => {
     res.json(response.data);
   } catch (error) {
     res.status(error.response?.status || 500).json({ message: 'Failed to fetch pulls', error: error.message, githubResponse: error.response?.data });
+  }
+};
+
+export const getPullRequestDiff = async (req, res) => {
+  try {
+    const { owner, repo, number, user_id } = req.query;
+    if (!owner || !repo || !number) return res.status(400).json({ message: 'owner, repo, and number are required' });
+    const githubToken = await getGithubTokenForUser(user_id);
+    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/pulls/${number}`, {
+      headers: {
+        ...(githubToken ? { Authorization: `token ${githubToken}` } : {}),
+        Accept: 'application/vnd.github.v3.diff',
+      },
+      responseType: 'text',
+    });
+    res.send(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({ message: 'Failed to fetch PR diff', error: error.message });
   }
 };
 
