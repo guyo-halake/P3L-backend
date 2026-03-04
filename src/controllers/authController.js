@@ -159,11 +159,20 @@ export const login = async (req, res) => {
       console.error('Login failed: Password does not match for email:', email);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-    const token = jwt.sign({ id: user.id, email: user.email, user_type: user.user_type }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const secret = process.env.JWT_SECRET || 'p3l_dev_default_secret_replacement';
+    const token = jwt.sign({ id: user.id, email: user.email, user_type: user.user_type }, secret, { expiresIn: '1d' });
     res.json({ token, user: { id: user.id, username: user.username, email: user.email, user_type: user.user_type, must_change_password: !!user.must_change_password } });
   } catch (err) {
-    console.error('Login error:', err); // Log error
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error('Login error detail:', {
+      message: err.message,
+      stack: err.stack,
+      email: email
+    });
+    res.status(500).json({ 
+      message: 'Authentication failed. Please check server logs.', 
+      error: err.message,
+      code: err.code || 'UNKNOWN'
+    });
   }
 };
 
