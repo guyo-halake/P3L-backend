@@ -442,7 +442,7 @@ export const getProjectTasks = async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await db.execute(
-      "SELECT pt.*, u.username as assignee_name FROM project_tasks pt LEFT JOIN users u ON pt.user_id = u.id WHERE pt.project_id = ? ORDER BY pt.created_at DESC",
+      "SELECT pt.*, u.username as assignee_name, u.avatar as assignee_avatar FROM project_tasks pt LEFT JOIN users u ON pt.assigned_to = u.id WHERE pt.project_id = ? ORDER BY pt.created_at DESC",
       [id]
     );
     res.json(rows);
@@ -452,25 +452,279 @@ export const getProjectTasks = async (req, res) => {
   }
 };
 
+import { sendMailInternal } from './emailController.js';
+import { getIO } from '../socket.js';
+
 export const createProjectTask = async (req, res) => {
   try {
-    const { project_id, user_id, title, description, priority, due_date } = req.body;
+    const { project_id, assigned_to, title, description, due_date, priority } = req.body;
     const [result] = await db.execute(
-      "INSERT INTO project_tasks (project_id, user_id, title, description, priority, due_date) VALUES (?, ?, ?, ?, ?, ?)",
-      [project_id, user_id, title, description, priority || "Medium", due_date]
+      "INSERT INTO project_tasks (project_id, assigned_to, title, description, due_date, status, priority) VALUES (?, ?, ?, ?, ?, 'Todo', ?)",
+      [project_id, assigned_to || null, title, description || null, due_date || null, priority || 'Medium']
     );
 
-    // Email Notification Mock
-    if (user_id) {
-      const [userRows] = await db.execute("SELECT email, username FROM users WHERE id = ?", [user_id]);
+    // Alert/Notification Logic
+    if (assigned_to) {
+      const [userRows] = await db.execute("SELECT email, username FROM users WHERE id = ?", [assigned_to]);
       if (userRows.length) {
-        console.log(`[EMAIL NOTIFICATION] Sending to ${userRows[0].email}: New Task Assigned: ${title}`);
+        const userEmail = userRows[0].email;
+        const assignedUsername = userRows[0].username;
+        const assignerName = req.user ? req.user.username : 'System';
+
+        // Find project name
+        const [projectRows] = await db.execute("SELECT name FROM projects WHERE id = ?", [project_id]);
+        const projectName = projectRows.length ? projectRows[0].name : "Unknown Project";
+
+        const messageText = `You were assigned a new task: "${title}" by ${assignerName}`;
+
+        // Create an alert logging the assignment
+        await db.execute(
+          "INSERT INTO system_alerts (user_id, message, link) VALUES (?, ?, ?)",
+          [assigned_to, messageText, `/project/${project_id}`]
+        );
+
+        // Send Email
+        const emailSubject = `New Task Assignment on ${projectName}: ${title}`;
+        const emailText = `Hey, ${assignedUsername}. You have a task on project ${projectName}. Below are the task details, work on it before deadline:\n\n*${title}*\nDescription: ${description || 'N/A'}\nDeadline: ${due_date || 'N/A'}\nAssigned By: ${assignerName}\nProject: ${projectName}\n\nThank you, P3L developers`;
+        try {
+          await sendMailInternal({ to: userEmail, subject: emailSubject, text: emailText });
+        } catch (e) {
+          console.error('Failed to send assignment email:', e);
+        }
+
+        // Socket Notification
+        const io = getIO();
+        if (io) {
+          io.emit('system_alert', { userId: parseInt(assigned_to), message: messageText, link: `/project/${project_id}` });
+        }
       }
     }
 
-    res.json({ id: result.insertId, ...req.body });
+    res.json({ id: result.insertId, ...req.body, status: 'Todo' });
   } catch (error) {
     console.error("Error creating project task:", error);
     res.status(500).json({ message: "Failed to create task" });
+  }
+};
+
+export const updateProjectTask = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, status, assigned_to, due_date, priority } = req.body;
+
+    const fields = [];
+    const params = [];
+
+    if (title !== undefined) { fields.push('title = ?'); params.push(title); }
+    if (description !== undefined) { fields.push('description = ?'); params.push(description); }
+    if (status !== undefined) { fields.push('status = ?'); params.push(status); }
+    if (assigned_to !== undefined) { fields.push('assigned_to = ?'); params.push(assigned_to || null); }
+    if (due_date !== undefined) { fields.push('due_date = ?'); params.push(due_date || null); }
+    if (priority !== undefined) { fields.push('priority = ?'); params.push(priority || 'Medium'); }
+
+    if (fields.length === 0) return res.status(400).json({ message: 'No fields provided to update.' });
+
+    params.push(id);
+    await db.execute(`UPDATE project_tasks SET ${fields.join(', ')} WHERE id = ?`, params);
+
+    // If assigned_to changed, notify the user
+    if (assigned_to) {
+      const [taskRows] = await db.execute("SELECT project_id, title, description, due_date FROM project_tasks WHERE id = ?", [id]);
+      if (taskRows.length) {
+        const t = taskRows[0];
+        const [userRows] = await db.execute("SELECT email, username FROM users WHERE id = ?", [assigned_to]);
+        if (userRows.length) {
+          const userEmail = userRows[0].email;
+          const assignedUsername = userRows[0].username;
+          const assignerName = req.user ? req.user.username : 'System';
+
+          const [projectRows] = await db.execute("SELECT name FROM projects WHERE id = ?", [t.project_id]);
+          const projectName = projectRows.length ? projectRows[0].name : "Project";
+
+          const messageText = `You have been assigned to task: "${t.title}" on project ${projectName} by ${assignerName}`;
+
+          // Alert entry
+          await db.execute("INSERT INTO system_alerts (user_id, message, link) VALUES (?, ?, ?)", [assigned_to, messageText, `/project/${t.project_id}`]);
+
+          // Email dispatch
+          const emailSubject = `Project Task Update: ${projectName} - ${t.title}`;
+          const emailText = `Hey, ${assignedUsername}.\n\nYou have been assigned a task on project: ${projectName}.\n\nTask Detail: **${t.title}**\nDescription: ${t.description || 'No description'}\nDeadline: ${t.due_date || 'N/A'}\nAssigned By: ${assignerName}\n\nThank you,\nP3L developers`;
+
+          try {
+            await sendMailInternal({ to: userEmail, subject: emailSubject, text: emailText });
+          } catch (e) { }
+
+          // Real-time toast
+          const io = getIO();
+          if (io) io.emit('system_alert', { userId: parseInt(assigned_to), message: messageText, link: `/project/${t.project_id}` });
+        }
+      }
+    }
+
+    res.json({ success: true, message: 'Task updated' });
+  } catch (error) {
+    console.error("Error updating project task:", error);
+    res.status(500).json({ message: "Failed to update task" });
+  }
+};
+
+// --- Task Checklist (Mini-Tasks) Logic ---
+
+export const getTaskChecklist = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.execute("SELECT * FROM task_checklists WHERE task_id = ? ORDER BY created_at ASC", [id]);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch checklist" });
+  }
+};
+
+export const addTaskChecklistItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { content } = req.body;
+    const [result] = await db.execute("INSERT INTO task_checklists (task_id, content, status) VALUES (?, ?, 'not_started')", [id, content]);
+    res.json({ id: result.insertId, task_id: id, content, status: 'not_started' });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to add checklist item" });
+  }
+};
+
+export const updateTaskChecklistItem = async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const { content, status } = req.body;
+
+    const fields = [];
+    const params = [];
+    if (content !== undefined) { fields.push('content = ?'); params.push(content); }
+    if (status !== undefined) { fields.push('status = ?'); params.push(status); }
+
+    if (fields.length === 0) return res.status(400).json({ message: "No data provided" });
+
+    params.push(itemId);
+    await db.execute(`UPDATE task_checklists SET ${fields.join(', ')} WHERE id = ?`, params);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update checklist item" });
+  }
+};
+
+export const deleteTaskChecklistItem = async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    await db.execute("DELETE FROM task_checklists WHERE id = ?", [itemId]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to delete checklist item" });
+  }
+};
+
+export const sendTaskReminder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { customText, sendToUser } = req.body; // customText is optional
+
+    const [taskRows] = await db.execute("SELECT * FROM project_tasks WHERE id = ?", [id]);
+    if (!taskRows.length) return res.status(404).json({ message: "Task not found" });
+    const t = taskRows[0];
+
+    // Priority recipient
+    const recipientId = sendToUser || t.assigned_to;
+    if (!recipientId) return res.status(400).json({ message: "No assignee for this task" });
+
+    const [userRows] = await db.execute("SELECT email, username FROM users WHERE id = ?", [recipientId]);
+    if (!userRows.length) return res.status(404).json({ message: "User not found" });
+    const user = userRows[0];
+
+    const [projRows] = await db.execute("SELECT name FROM projects WHERE id = ?", [t.project_id]);
+    const projectName = projRows.length ? projRows[0].name : "Project";
+
+    // Time calculation
+    let timeRemainingStr = "N/A";
+    if (t.due_date) {
+      const now = new Date();
+      const due = new Date(t.due_date);
+      const diffMs = due - now;
+      if (diffMs > 0) {
+        const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        timeRemainingStr = `${diffHrs}hrs ${diffMins}mins`;
+      } else {
+        timeRemainingStr = "OVERDUE";
+      }
+    }
+
+    const reminderHeader = `P3L Reminders: Your "${t.title}" on ${projectName} is due in ${timeRemainingStr}. please work on it.`;
+    const finalMessage = customText ? `${reminderHeader}\n\nNote: ${customText}` : reminderHeader;
+
+    // Dispatch
+    await sendMailInternal({
+      to: user.email,
+      subject: `[REMINDER] ${t.title} - ${projectName}`,
+      text: finalMessage
+    });
+
+    // Also send in-app alert
+    await db.execute("INSERT INTO system_alerts (user_id, message, link) VALUES (?, ?, ?)", [recipientId, reminderHeader, `/tasks`]);
+    const io = getIO();
+    if (io) io.emit('system_alert', { userId: parseInt(recipientId), message: reminderHeader, link: `/tasks` });
+
+    res.json({ success: true, message: "Reminder sent successfully" });
+  } catch (error) {
+    console.error("Reminder error:", error);
+    res.status(500).json({ message: "Failed to send reminder" });
+  }
+};
+
+export const getProjectActivity = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.execute("SELECT * FROM system_activities WHERE project_id = ? ORDER BY created_at DESC", [id]);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch activity" });
+  }
+};
+
+export const getProjectMilestones = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.execute("SELECT * FROM project_milestones WHERE project_id = ? ORDER BY due_date ASC", [id]);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch milestones" });
+  }
+};
+
+export const addProjectMilestone = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, due_date } = req.body;
+    const [result] = await db.execute("INSERT INTO project_milestones (project_id, title, description, due_date) VALUES (?, ?, ?, ?)", [id, title, description, due_date]);
+    res.json({ id: result.insertId, project_id: id, title, description, due_date, status: 'pending' });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to add milestone" });
+  }
+};
+
+export const getProjectDocuments = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.execute("SELECT * FROM project_documents WHERE project_id = ? ORDER BY uploaded_at DESC", [id]);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch documents" });
+  }
+};
+
+export const getProjectInvoices = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.execute("SELECT * FROM invoices WHERE project_id = ? ORDER BY date DESC", [id]);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch invoices" });
   }
 };

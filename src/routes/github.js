@@ -1,6 +1,6 @@
 import express from 'express';
 import fetch from 'node-fetch';
-import { getPersonalGitHubRepos, getAllGitHubRepos, githubLogin, githubCallback, getRepoReadme, getRepoBranches, getRepoCommits, getRepoPulls, getRepoIssues, mergePullRequest, createBranch, createPullRequest, createIssue, updateIssue, getGithubMe, getRepoLatestWorkflowRun, addRepoCollaborator, getRepoLanguages, getRepoReleases, getRepoCollaborators, getRepoWorkflows, getRepoWorkflowRuns, getRepoContents, getRepoFileContent, getGithubActivity } from '../controllers/githubController.js';
+import { getPersonalGitHubRepos, getAllGitHubRepos, githubLogin, githubCallback, getRepoReadme, getRepoBranches, getRepoCommits, getRepoPulls, getPullRequestDiff, getRepoIssues, mergePullRequest, createBranch, createPullRequest, createIssue, updateIssue, getGithubMe, getRepoLatestWorkflowRun, addRepoCollaborator, getRepoLanguages, getRepoReleases, getRepoCollaborators, getRepoWorkflows, getRepoWorkflowRuns, getRepoContents, getRepoFileContent, getGithubActivity } from '../controllers/githubController.js';
 const router = express.Router();
 
 // GET /api/github/activity
@@ -23,6 +23,7 @@ router.get('/readme', getRepoReadme);
 router.get('/branches', getRepoBranches);
 router.get('/commits', getRepoCommits);
 router.get('/pulls', getRepoPulls);
+router.get('/pulls/diff', getPullRequestDiff);
 router.get('/issues', getRepoIssues);
 router.get('/workflows/latest', getRepoLatestWorkflowRun);
 router.get('/languages', getRepoLanguages);
