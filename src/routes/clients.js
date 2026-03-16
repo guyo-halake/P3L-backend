@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createClient, getClients, getClientById, updateClientById, assignProjectToClient } from '../controllers/clientController.js';
+import { createClient, getClients, getClientById, updateClientById, assignProjectToClient, onboardClient } from '../controllers/clientController.js';
 import db from '../config/db.js';
 
 const router = Router();
@@ -30,5 +30,8 @@ router.put('/:id', updateClientById);
 
 // POST /api/clients/:clientId/assign-project - assign a project to a client
 router.post('/:clientId/assign-project', assignProjectToClient);
+
+// POST /api/clients/:id/onboard - onboard a client (Email + WhatsApp)
+router.post('/:id/onboard', onboardClient);
 
 export default router;

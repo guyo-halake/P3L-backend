@@ -1,8 +1,13 @@
 import express from 'express';
-import { getAllGitHubRepos } from '../controllers/orgsController.js';
+import { listOrgs, createOrg, listBusinessUnits, createBusinessUnit } from '../controllers/orgsController.js';
 const router = express.Router();
 
-// GET /api/github/all-repos?user_id=1
-router.get('/all-repos', getAllGitHubRepos);
+// Orgs
+router.get('/', listOrgs);
+router.post('/', createOrg);
+
+// Business units within an org
+router.get('/:orgId/business-units', listBusinessUnits);
+router.post('/:orgId/business-units', createBusinessUnit);
 
 export default router;

@@ -228,7 +228,8 @@ export const createProject = async (req, res) => {
       tech_stack,
       progress,
       next_milestone,
-      milestone_date
+      milestone_date,
+      budget
     } = req.body;
 
     const params = [
@@ -243,12 +244,13 @@ export const createProject = async (req, res) => {
       tech_stack ? JSON.stringify(tech_stack) : null,
       progress || 0,
       next_milestone,
-      milestone_date
+      milestone_date,
+      budget || null
     ].map(v => v === undefined ? null : v);
 
     const [result] = await db.execute(
-      `INSERT INTO projects (user_id, client_id, name, description, status, github_repo, vercel_url, type, tech_stack, progress, next_milestone, milestone_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO projects (user_id, client_id, name, description, status, github_repo, vercel_url, type, tech_stack, progress, next_milestone, milestone_date, budget)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       params
     );
 
@@ -292,7 +294,7 @@ export const getProjects = async (req, res) => {
     const [rows] = await db.execute(`
       SELECT 
         p.id, p.user_id, p.client_id, p.name, p.description, p.status, p.github_repo, p.vercel_url, p.created_at, p.type,
-        p.tech_stack, p.progress, p.next_milestone, p.milestone_date,
+        p.tech_stack, p.progress, p.next_milestone, p.milestone_date, p.budget, p.is_pinned,
         c.name AS client,
         u.username AS assigned_user_name,
         u.avatar AS assigned_user_avatar
@@ -345,7 +347,7 @@ export const updateProject = async (req, res) => {
     if (!id) return res.status(400).json({ message: 'Project id is required' });
     const {
       name, description, status, github_repo, vercel_url, client_id, user_id, type,
-      tech_stack, progress, next_milestone, milestone_date
+      tech_stack, progress, next_milestone, milestone_date, budget
     } = req.body;
 
     const fields = [];
@@ -362,6 +364,8 @@ export const updateProject = async (req, res) => {
     if (progress !== undefined) { fields.push('progress = ?'); params.push(progress); }
     if (next_milestone !== undefined) { fields.push('next_milestone = ?'); params.push(next_milestone); }
     if (milestone_date !== undefined) { fields.push('milestone_date = ?'); params.push(milestone_date); }
+    if (budget !== undefined) { fields.push('budget = ?'); params.push(budget); }
+    if (req.body.is_pinned !== undefined) { fields.push('is_pinned = ?'); params.push(req.body.is_pinned); }
 
     if (fields.length === 0) {
       return res.status(400).json({ message: 'No fields to update' });

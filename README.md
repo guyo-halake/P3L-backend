@@ -10,7 +10,16 @@ Node.js Express backend for P3L system. Uses MySQL (XAMPP) for database. Provide
 
 ## Setup
 1. Install dependencies: `npm install`
-2. Configure `.env` for MySQL connection
+2. Configure `.env` with at least:
+	- `PORT`
+	- `JWT_SECRET`
+	- `SESSION_SECRET`
+	- `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
+	- `EMAIL_USER`, `EMAIL_PASS`
+	- `FRONTEND_URL`
+	- `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` (OAuth)
+	- `GITHUB_TOKEN` (optional fallback)
+	- `VERCEL_TOKEN` (required for Vercel APIs)
 3. Start server: `npm run dev`
 
 ## Endpoints

@@ -3,14 +3,20 @@ import imaps from 'imap-simple';
 import { simpleParser } from 'mailparser';
 import { logActivity } from '../utils/activityLogger.js';
 import db from '../config/db.js';
+import { getIO } from '../socket.js';
+import { ensurePMainStorage, savePMainMessage } from '../controllers/pMainController.js';
 import dotenv from 'dotenv';
 dotenv.config();
+
+const emailThreadKey = (email) => `email:${String(email || 'unknown').toLowerCase()}`;
 
 export const checkEmailReplies = async () => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     console.log('Skipping email check: Missing EMAIL_USER or EMAIL_PASS');
     return;
   }
+
+  await ensurePMainStorage();
 
   const config = {
     imap: {
@@ -47,7 +53,7 @@ export const checkEmailReplies = async () => {
 
     const searchCriteria = ['UNSEEN'];
     const fetchOptions = {
-      bodies: ['HEADER', 'TEXT'],
+      bodies: [''],
       markSeen: false
     };
 
@@ -58,47 +64,60 @@ export const checkEmailReplies = async () => {
     }
 
     for (const message of messages) {
-      const header = message.parts.find(part => part.which === 'HEADER');
-      if (!header || !header.body || !header.body.from) continue;
+      try {
+        const rawPart = message.parts.find(part => part.which === '');
+        if (!rawPart) continue;
+        const rawEmail = await connection.getPartData(message, rawPart);
+        const parsed = await simpleParser(rawEmail);
+        const fromValue = parsed.from?.value?.[0]?.address || '';
+        const fromEmail = fromValue.toLowerCase().trim();
+        if (!fromEmail) continue;
 
-      const fromHeader = header.body.from[0];
-      const emailMatch = fromHeader.match(/<([^>]+)>/);
-      const fromEmail = emailMatch ? emailMatch[1].toLowerCase() : fromHeader.toLowerCase().trim();
+        const subject = parsed.subject || 'No Subject';
+        const emailText = (parsed.text || parsed.html || 'No content').toString().trim() || 'No content';
 
-      if (pendingEmails.includes(fromEmail)) {
-        console.log(`Reply detected from ${fromEmail}!`);
+        await savePMainMessage({
+          channel: 'email',
+          direction: 'inbound',
+          thread_key: emailThreadKey(fromEmail),
+          recipient: process.env.EMAIL_USER || null,
+          sender: fromEmail,
+          subject,
+          body: emailText.substring(0, 20000),
+          status: 'received',
+          provider_message_id: parsed.messageId || null,
+          meta: {
+            in_reply_to: parsed.inReplyTo || null,
+            references: parsed.references || null,
+          },
+        });
 
-        // Parse subject
-        const subject = header.body.subject ? header.body.subject[0] : 'No Subject';
-
-        // Fetch body
-        let emailText = "No content";
-        try {
-          const all = message.parts.find(part => part.which === 'TEXT');
-          const messageBody = await connection.getPartData(message, all);
-          emailText = messageBody || "No content";
-        } catch (e) {
-          console.error("Error fetching email body", e);
+        const io = getIO();
+        if (io) {
+          io.emit('pmain_message', { type: 'inbound', channel: 'email', threadKey: emailThreadKey(fromEmail) });
         }
 
-        // Store the reply content
-        await db.execute(
-          "UPDATE invitations SET status = 'replied', last_checked = NOW(), reply_content = ?, reply_subject = ? WHERE invitee_email = ?",
-          [emailText.substring(0, 5000), subject, fromEmail]
-        );
+        if (pendingEmails.includes(fromEmail)) {
+          console.log(`Reply detected from ${fromEmail}!`);
 
-        // Create Notification
-        await db.execute(
-          "INSERT INTO notifications (type, message, is_read) VALUES (?, ?, ?)",
-          ['reply_received', `Reply received from ${fromEmail}`, false]
-        );
+          await db.execute(
+            "UPDATE invitations SET status = 'replied', last_checked = NOW(), reply_content = ?, reply_subject = ? WHERE invitee_email = ?",
+            [emailText.substring(0, 5000), subject, fromEmail]
+          );
 
-        // Log to System Activity (safely)
-        try {
-          await logActivity('email', `Reply received from ${fromEmail}: "${subject}"`, { from: fromEmail, subject: subject });
-        } catch (logErr) {
-          console.error("Failed to log activity for email reply:", logErr);
+          await db.execute(
+            "INSERT INTO notifications (type, message, is_read) VALUES (?, ?, ?)",
+            ['reply_received', `Reply received from ${fromEmail}`, false]
+          );
+
+          try {
+            await logActivity('email', `Reply received from ${fromEmail}: "${subject}"`, { from: fromEmail, subject: subject });
+          } catch (logErr) {
+            console.error("Failed to log activity for email reply:", logErr);
+          }
         }
+      } catch (messageError) {
+        console.error('Error processing inbound email:', messageError.message || messageError);
       }
     }
     // console.log('Email check completed.');

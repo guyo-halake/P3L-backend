@@ -5,9 +5,12 @@ import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 import healthRoutes from './routes/health.js';
 import marketRoutes from './routes/market.js';
+import pmainRoutes from './routes/pmain.js';
 import { setIO } from './socket.js';
 import authRoutes from './routes/auth.js';
 import projectRoutes from './routes/projects.js';
@@ -16,6 +19,7 @@ import serviceRoutes from './routes/services.js';
 import emailRoutes from './routes/email.js';
 import userSettingsRoutes from './routes/userSettings.js';
 import githubRoutes from './routes/github.js';
+import { githubLogin, githubCallback } from './controllers/githubController.js';
 import orgsRoutes from './routes/orgs.js';
 import messageRoutes from './routes/messages.js';
 import groupRoutes from './routes/groups.js';
@@ -43,11 +47,30 @@ import smsRoutes from './routes/sms.js';
 import potentialClientRoutes from './routes/potentialClients.js';
 import p3lTesterRoutes from './routes/p3lTesters.js';
 import ssoRoutes from './routes/sso.js';
+import jobsRoutes from './routes/jobs.js';
+import financeRoutes, { financePublicRouter } from './routes/finance.js';
+import { ensureJobsFinanceSchema } from './models/jobsFinanceSchema.js';
+import { startJobsFinanceAutomation } from './services/jobsFinanceAutomation.js';
+import { telegramWebhook } from './controllers/pMainController.js';
 
 dotenv.config();
 
-// Debug: Print DB config values
-console.log('DB config:', process.env.DB_HOST, process.env.DB_USER, process.env.DB_NAME);
+await ensureJobsFinanceSchema();
+startJobsFinanceAutomation();
+
+function requireEnv(name) {
+  const val = process.env[name];
+  if (!val) {
+    throw new Error(`Missing required env: ${name}`);
+  }
+  return val;
+}
+
+// Fail fast on critical secrets (prevents insecure defaults)
+if (process.env.NODE_ENV === 'production') {
+  requireEnv('JWT_SECRET');
+  requireEnv('SESSION_SECRET');
+}
 
 // ... (lines 30-46) ...
 
@@ -72,13 +95,26 @@ const frontendDist = path.resolve(__dirname, '../../dist');
 const httpServer = createServer(app);
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: '*',
+    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*',
     methods: ['GET', 'POST']
   }
 });
 setIO(io);
 
-app.use(cors());
+app.set('trust proxy', 1);
+app.use(cors({
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*',
+  credentials: true,
+}));
+app.use(helmet({
+  contentSecurityPolicy: false, // frontend served separately; keep flexible
+}));
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.RATE_LIMIT_MAX || 600),
+  standardHeaders: true,
+  legacyHeaders: false,
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
@@ -88,13 +124,28 @@ app.use(expressSession({
   secret: process.env.SESSION_SECRET || 'dev_secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false, httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 }, // 1 week
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000
+  }, // 1 week
 }));
 
-// Health check route
+// --- Public Routes ---
 app.use('/api', healthRoutes);
-
 app.use('/api/auth', authRoutes);
+app.use('/api/finance', financePublicRouter);
+// Keep OAuth entry/callback public so unauthenticated users can complete GitHub login.
+app.get('/api/github/login', githubLogin);
+app.get('/api/github/callback', githubCallback);
+app.post('/api/pmain/telegram/webhook', telegramWebhook);
+
+// --- Protected Routes (Require Login) ---
+app.use('/api', authenticateToken);
+
+app.use('/api/orgs', orgsRoutes);
+
 app.use('/api/tryhackme', tryhackmeRoutes);
 app.use('/api/user-settings', userSettingsRoutes);
 app.use('/api/github', githubRoutes);
@@ -104,15 +155,12 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/potential-clients', potentialClientRoutes);
 app.use('/api/p3l-testers', p3lTesterRoutes);
 app.use('/api/activity', activityRoutes);
-app.get('/api/activity', authenticateToken, getActivity);
-app.post('/api/activity', authenticateToken, createActivity);
-app.get('/api/system-activity', authenticateToken, getSystemActivity);
+app.get('/api/activity', getActivity); // authenticateToken already applied above
+app.post('/api/activity', createActivity); // authenticateToken already applied above
+app.get('/api/system-activity', getSystemActivity); // authenticateToken already applied above
 
 // Fees Routes
-app.use('/api/messages', (req, res, next) => {
-  // console.log removed for production
-  next();
-}, messageRoutes);
+app.use('/api/messages', messageRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/schools', schoolsRoutes);
 import assignmentsRoutes from './routes/assignments.js';
@@ -128,6 +176,7 @@ app.use('/api/reports', reportsRoutes);
 import unitsRoutes from './routes/units.js';
 app.use('/api/units', unitsRoutes);
 app.use('/api/market', marketRoutes);
+app.use('/api/pmain', pmainRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/notion', notionRoutes);
 app.use('/api/notifications', notificationRoutes);
@@ -145,6 +194,8 @@ app.use('/api/invoices', invoiceRoutes);
 app.use('/api/vercel', vercelRoutes);
 app.use('/api/sms', smsRoutes);
 app.use('/api/sso', ssoRoutes);
+app.use('/api/jobs', jobsRoutes);
+app.use('/api/finance', financeRoutes);
 
 import businessRoutes from './routes/business.js';
 app.use('/api/business', businessRoutes);
@@ -277,7 +328,7 @@ io.on('connection', (socket) => {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('GLOBAL ERROR HANDLER:', err);
-  res.status(500).json({ error: 'Internal Server Error', details: err.message });
+  res.status(500).json({ error: 'Internal Server Error' });
 });
 
 // Start server

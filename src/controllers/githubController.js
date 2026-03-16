@@ -209,12 +209,16 @@ export const githubCallback = async (req, res) => {
 };
 // Helper: get GitHub token for a user
 async function getGithubTokenForUser(user_id) {
+  // 1. Prefer global token from .env for maximum reliability in demo
+  if (process.env.GITHUB_TOKEN) return process.env.GITHUB_TOKEN;
+
+  // 2. Fallback to user-specific token from DB
   if (user_id) {
     const [rows] = await db.execute('SELECT github_token FROM users WHERE id = ?', [user_id]);
     if (rows.length && rows[0].github_token) return rows[0].github_token;
   }
-  // Fallback to global token if provided in environment
-  return process.env.GITHUB_TOKEN || null;
+
+  return null;
 }
 // Get all GitHub repos for the authenticated user (owner + member)
 export const getAllGitHubRepos = async (req, res) => {
@@ -791,6 +795,102 @@ export const getRepoFileContent = async (req, res) => {
     res.send(response.data);
   } catch (error) {
     res.status(error.response?.status || 500).json({ message: 'Failed to fetch file content' });
+  }
+};
+
+// Create one or more GitHub repositories
+export const createGitHubRepos = async (req, res) => {
+  try {
+    const { user_id, repos, owner_type, org_name, visibility } = req.body;
+    if (!Array.isArray(repos) || repos.length === 0) {
+      return res.status(400).json({ message: 'repos array is required' });
+    }
+
+    const githubToken = await getGithubTokenForUser(user_id);
+    if (!githubToken) {
+      return res.status(401).json({ message: 'No GitHub token found. Connect your GitHub account first.' });
+    }
+
+    const created = [];
+    for (const repo of repos) {
+      if (!repo.name) continue;
+      // Sanitize repo name: only alphanumeric, hyphens, underscores
+      const safeName = String(repo.name).trim().replace(/[^a-zA-Z0-9._-]/g, '-').replace(/^-+|-+$/g, '');
+      if (!safeName) continue;
+
+      const payload = {
+        name: safeName,
+        description: repo.description || '',
+        private: visibility === 'private',
+        auto_init: true,
+      };
+
+      const url = (owner_type === 'org' && org_name)
+        ? `https://api.github.com/orgs/${encodeURIComponent(org_name)}/repos`
+        : 'https://api.github.com/user/repos';
+
+      const response = await axios.post(url, payload, {
+        headers: {
+          Authorization: `token ${githubToken}`,
+          Accept: 'application/vnd.github+json',
+          'User-Agent': 'P3L-App',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      });
+
+      // Add topics if provided (separate API call)
+      if (Array.isArray(repo.topics) && repo.topics.length > 0) {
+        const repoFullName = response.data.full_name;
+        await axios.put(
+          `https://api.github.com/repos/${repoFullName}/topics`,
+          { names: repo.topics.slice(0, 20) },
+          {
+            headers: {
+              Authorization: `token ${githubToken}`,
+              Accept: 'application/vnd.github+json',
+              'User-Agent': 'P3L-App',
+            },
+          }
+        ).catch(e => console.warn('[GitHub] Topics set failed:', e.message));
+      }
+
+      created.push({
+        name: response.data.name,
+        url: response.data.html_url,
+        clone_url: response.data.clone_url,
+        ssh_url: response.data.ssh_url,
+        private: response.data.private,
+      });
+    }
+
+    logActivity('github', `Created ${created.length} repo(s): ${created.map(r => r.name).join(', ')}`, { user_id, repos: created });
+    res.json({ success: true, repos: created });
+  } catch (error) {
+    const status = error.response?.status || 500;
+    const msg = error.response?.data?.message || error.message;
+    console.error('[GitHub] Repo creation failed:', msg, error.response?.data);
+    res.status(status).json({ message: `GitHub repo creation failed: ${msg}`, error: msg, details: error.response?.data });
+  }
+};
+
+// Get GitHub organizations for the authenticated user
+export const getGitHubOrgs = async (req, res) => {
+  try {
+    const { user_id } = req.query;
+    const githubToken = await getGithubTokenForUser(user_id);
+    if (!githubToken) return res.json([]);
+
+    const response = await axios.get('https://api.github.com/user/orgs?per_page=100', {
+      headers: {
+        Authorization: `token ${githubToken}`,
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'P3L-App',
+      },
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error('[GitHub] Failed to fetch orgs:', error.message);
+    res.json([]);
   }
 };
 
