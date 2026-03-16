@@ -77,8 +77,11 @@ export const deleteService = async (req, res) => {
 
 // Helper to get GitHub Token
 const getGithubToken = async (req) => {
+    // 1. Prefer global token from .env for maximum reliability in demo
+    if (process.env.GITHUB_TOKEN) return process.env.GITHUB_TOKEN;
+
     const userId = req.user ? req.user.id : req.query.user_id;
-    let githubToken = process.env.GITHUB_TOKEN; // System fallback
+    let githubToken = null;
 
     if (userId) {
         try {

@@ -1,5 +1,7 @@
 // backend/src/controllers/emailController.js
 import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
 import { logActivity } from '../utils/activityLogger.js';
 
 // Gmail App Password transporter
@@ -62,7 +64,12 @@ function buildHtml(text, subject = '') {
           <!-- Footer -->
           <tr>
             <td style="padding:20px 32px;background:#f9f9f9;border-top:1px solid #eeeeee;color:#999999;font-size:12px;">
-              This message was sent by P3L Developers. Please do not reply directly to this email.
+              <div style="color:#444444;font-size:12px;line-height:1.6;">
+                Regards,<br/>
+                <strong>Admin</strong><br/>
+                P3L Developer<br/>
+                <a href="https://www.p3lcodes.vercel.app" style="color:#ea580c;text-decoration:none;">www.p3lcodes.vercel.app</a>
+              </div>
             </td>
           </tr>
         </table>
@@ -73,34 +80,63 @@ function buildHtml(text, subject = '') {
 </html>`;
 }
 
-export const sendMailInternal = async ({ to, subject, text, html }) => {
+export const sendMailInternal = async ({ to, subject, text, html, replyTo, attachments = [] }) => {
   const fromEmail = process.env.EMAIL_USER || 'p3lcodes@gmail.com';
 
   const info = await transporter.sendMail({
     from: `"P3L Developers" <${fromEmail}>`,
-    replyTo: fromEmail,
+    replyTo: replyTo || fromEmail,
     to,
     subject: subject || 'Message from P3L Developers',
     text: text || '',
-    html: html || buildHtml(text || '', subject || '')
+    html: html || buildHtml(text || '', subject || ''),
+    attachments
   });
 
   console.log('[EMAIL] Sent OK. MessageId:', info.messageId, '→', to);
   return info;
 };
 
+export async function getEmailTemplates(req, res) {
+  try {
+    const filePath = path.join(process.cwd(), 'backend', 'mock_templates.json');
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const parsed = JSON.parse(raw);
+    res.json(parsed);
+  } catch (err) {
+    console.error('[EMAIL] TEMPLATE LOAD ERROR:', err);
+    res.status(500).json({ error: 'Failed to load templates' });
+  }
+}
+
 export async function sendEmail(req, res) {
-  const { to, subject, text, html } = req.body;
+  const { to, from, subject, text, html } = req.body;
   if (!to || !text) {
     return res.status(400).json({ error: 'Missing recipient or message' });
   }
   try {
-    const info = await sendMailInternal({ to, subject, text, html });
+    const files = Array.isArray(req.files) ? req.files : [];
+    const attachments = files.map((file) => ({
+      filename: file.originalname,
+      content: file.buffer,
+      contentType: file.mimetype
+    }));
+
+    const info = await sendMailInternal({ to, subject, text, html, replyTo: from, attachments });
 
     const user = req.user ? req.user.username : 'System';
-    logActivity('email', `Email sent to ${to} by ${user}`, { subject, user });
+    logActivity('email', `Email sent to ${to} by ${user}`, {
+      subject,
+      user,
+      attachments: attachments.map((a) => a.filename)
+    });
 
-    res.json({ success: true, message: 'Email sent successfully', messageId: info.messageId });
+    res.json({
+      success: true,
+      message: 'Email sent successfully',
+      messageId: info.messageId,
+      attachments: attachments.map((a) => a.filename)
+    });
   } catch (err) {
     console.error('[EMAIL] SEND ERROR:', err);
     res.status(500).json({

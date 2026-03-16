@@ -29,6 +29,7 @@ async function run() {
   const files = [
     // --- Core tables (no FK dependencies) ---
     path.join(root, 'src', 'models', 'users.sql'),
+    path.join(root, 'src', 'models', 'orgs.sql'),
     path.join(root, 'src', 'models', 'clients.sql'),
     path.join(root, 'src', 'models', 'projects.sql'),
     path.join(root, 'src', 'models', 'schools.sql'),

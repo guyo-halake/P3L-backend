@@ -1,6 +1,6 @@
 import express from 'express';
 import fetch from 'node-fetch';
-import { getPersonalGitHubRepos, getAllGitHubRepos, githubLogin, githubCallback, getRepoReadme, getRepoBranches, getRepoCommits, getRepoPulls, getPullRequestDiff, getRepoIssues, mergePullRequest, createBranch, createPullRequest, createIssue, updateIssue, getGithubMe, getRepoLatestWorkflowRun, addRepoCollaborator, getRepoLanguages, getRepoReleases, getRepoCollaborators, getRepoWorkflows, getRepoWorkflowRuns, getRepoContents, getRepoFileContent, getGithubActivity } from '../controllers/githubController.js';
+import { getPersonalGitHubRepos, getAllGitHubRepos, githubLogin, githubCallback, getRepoReadme, getRepoBranches, getRepoCommits, getRepoPulls, getPullRequestDiff, getRepoIssues, mergePullRequest, createBranch, createPullRequest, createIssue, updateIssue, getGithubMe, getRepoLatestWorkflowRun, addRepoCollaborator, getRepoLanguages, getRepoReleases, getRepoCollaborators, getRepoWorkflows, getRepoWorkflowRuns, getRepoContents, getRepoFileContent, getGithubActivity, createGitHubRepos, getGitHubOrgs } from '../controllers/githubController.js';
 const router = express.Router();
 
 // GET /api/github/activity
@@ -40,6 +40,10 @@ router.post('/issues/create', createIssue);
 router.post('/issues/update', updateIssue);
 router.post('/branches/create', createBranch);
 router.post('/collaborators/add', addRepoCollaborator);
+// Create repos via GitHub API
+router.post('/repos/create', createGitHubRepos);
+// Get orgs the authenticated user belongs to
+router.get('/orgs', getGitHubOrgs);
 
 // Proxy GitHub avatar to avoid cross-origin image issues
 router.get('/avatar', async (req, res) => {

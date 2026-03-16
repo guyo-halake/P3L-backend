@@ -2,6 +2,9 @@ import jwt from 'jsonwebtoken';
 
 // Middleware to verify JWT and attach user to request
 export function authenticateToken(req, res, next) {
+  if (!process.env.JWT_SECRET) {
+    return res.status(500).json({ message: 'Server misconfigured: JWT secret missing' });
+  }
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.status(401).json({ message: 'No token provided' });

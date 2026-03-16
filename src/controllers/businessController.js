@@ -1,5 +1,15 @@
 
 import db from '../config/db.js';
+import { getIO } from '../socket.js';
+
+function emitBusinessUpdate(payload = {}) {
+    const io = getIO();
+    if (!io) return;
+    io.emit('business_updated', {
+        ...payload,
+        timestamp: new Date().toISOString(),
+    });
+}
 
 // Revenue Summary
 export const getRevenueSummary = async (req, res) => {
@@ -67,6 +77,7 @@ export const addVaultDoc = async (req, res) => {
             'INSERT INTO business_vault (title, category, file_url, source) VALUES (?, ?, ?, ?)',
             [title, category, file_url, source]
         );
+        emitBusinessUpdate({ entity: 'vault_doc', action: 'create', vaultDocId: result.insertId });
         res.status(201).json({ id: result.insertId });
     } catch (err) {
         res.status(500).json({ error: err.message });
